@@ -1,0 +1,45 @@
+# Python dependencies for open-notebook
+# Generated from pyproject.toml
+
+# Core web framework
+fastapi>=0.104.0
+uvicorn>=0.24.0
+pydantic>=2.9.2
+
+# Logging and utilities
+loguru>=0.7.2
+python-dotenv>=1.0.1
+tomli>=2.0.2
+
+# LangChain ecosystem
+langchain>=0.3.3
+langgraph>=0.2.38
+tiktoken>=0.8.0
+langgraph-checkpoint-sqlite>=2.0.0
+langchain-community>=0.3.3
+langchain-openai>=0.2.3
+langchain-anthropic>=0.2.3
+langchain-ollama>=0.2.0
+langchain-google-genai>=2.1.10
+langchain-groq>=0.2.1
+langchain_mistralai>=0.2.1
+langchain_deepseek>=0.1.3
+langchain-google-vertexai>=2.0.28
+
+# AI services
+groq>=0.12.0
+esperanto>=2.4.1
+
+# HTTP client
+httpx[socks]>=0.27.0
+
+# Content processing
+content-core>=1.0.2
+ai-prompter>=0.3
+
+# Database
+surrealdb>=1.0.4
+surreal-commands>=1.0.13
+
+# Podcast features
+podcast-creator>=0.7.0

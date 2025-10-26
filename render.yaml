@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: ephitup
+    runtime: docker
+    dockerfilePath: ./Dockerfile.single
+    dockerContext: .
+    plan: starter
+    healthCheckPath: /
+    envVars:
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: SURREAL_URL
+        value: "ws://localhost:8000/rpc"
+      - key: SURREAL_USER
+        value: "root"
+      - key: SURREAL_PASSWORD
+        generateValue: true
+      - key: SURREAL_NAMESPACE
+        value: "open_notebook"
+      - key: SURREAL_DATABASE
+        value: "production"
