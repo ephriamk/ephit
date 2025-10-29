@@ -22,7 +22,6 @@ services:
         sync: false
       - key: S3_REGION
         value: "us-east-2"
-        sync: false
       
       # Database Configuration
       - key: SURREAL_URL
