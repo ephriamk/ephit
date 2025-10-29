@@ -59,7 +59,7 @@ function humanizeProvider(value: string) {
 
 export function ProviderKeysCard() {
   const { toast } = useToast()
-  const { data: storedSecrets, isLoading, error } = useProviderSecrets()
+  const { data: storedSecrets, isLoading } = useProviderSecrets()
   const upsertSecret = useUpsertProviderSecret()
   const deleteSecret = useDeleteProviderSecret()
   const revealSecret = useRevealProviderSecret()

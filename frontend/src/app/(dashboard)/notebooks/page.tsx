@@ -3,7 +3,6 @@
 import { useMemo, useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { AppShell } from '@/components/layout/AppShell'
-import { NotebookList } from './components/NotebookList'
 import { Button } from '@/components/ui/button'
 import { Plus, RefreshCw, Search, BookOpen, Calendar, Sparkles } from 'lucide-react'
 import { useNotebooks } from '@/lib/hooks/use-notebooks'
@@ -12,13 +11,13 @@ import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
 import { formatDistanceToNow } from 'date-fns'
 import { Badge } from '@/components/ui/badge'
-import { cn } from '@/lib/utils'
 import { OnboardingDialog } from '@/components/onboarding/OnboardingDialog'
 import { useAuthStore } from '@/lib/stores/auth-store'
 import { completeOnboarding } from '@/lib/api/onboarding'
+import type { NotebookResponse } from '@/lib/types/api'
 
 // Modern Notebook Card Component
-function NotebookCard({ notebook, archived = false }: { notebook: any, archived?: boolean }) {
+function NotebookCard({ notebook, archived = false }: { notebook: NotebookResponse, archived?: boolean }) {
   return (
     <Link href={`/notebooks/${notebook.id}`}>
       <Card className="h-full group hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] cursor-pointer overflow-hidden relative specular-highlight">

@@ -59,7 +59,7 @@ export function ApiKeyStep({ onComplete, onSkip }: ApiKeyStepProps) {
 
       // Continue to next step
       onComplete()
-    } catch (error) {
+    } catch {
       toast({
         title: 'Failed to Save API Key',
         description: 'There was an error saving your API key',
@@ -125,7 +125,7 @@ export function ApiKeyStep({ onComplete, onSkip }: ApiKeyStepProps) {
           <div className="flex items-start gap-3">
             <KeyRound className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
             <div className="space-y-1 text-sm">
-              <p className="font-medium">Don't have an API key?</p>
+              <p className="font-medium">Don&apos;t have an API key?</p>
               <p className="text-muted-foreground">
                 You can skip this step and add your API key later in Settings. The platform can also work with
                 global API keys configured by your organization.

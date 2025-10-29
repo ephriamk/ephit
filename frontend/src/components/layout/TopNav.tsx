@@ -17,7 +17,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { ThemeToggle } from '@/components/common/ThemeToggle'
-import { Separator } from '@/components/ui/separator'
 import { Search, Bell, Settings, User, LogOut, Shield } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 

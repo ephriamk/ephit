@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { adminApi } from '@/lib/api/admin'
 import { useAuthStore } from '@/lib/stores/auth-store'
 import { useToast } from '@/lib/hooks/use-toast'
-import type { AdminUserSummary, AdminUserDetail } from '@/lib/types/api'
+import type { AdminUserDetail } from '@/lib/types/api'
 
 const ADMIN_USERS_KEY = ['admin', 'users'] as const
 
