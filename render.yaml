@@ -4,7 +4,7 @@ services:
     runtime: docker
     dockerfilePath: ./Dockerfile.single
     dockerContext: .
-    plan: starter
+    plan: starter  # Note: 512MB RAM may be tight. Consider upgrading to 'standard' (2GB) for production
     healthCheckPath: /
     envVars:
       # Optional: System-level API keys (users can add their own keys in Settings)
