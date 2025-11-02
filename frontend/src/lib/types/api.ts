@@ -18,6 +18,9 @@ export interface AuthUser {
   has_completed_onboarding?: boolean
 }
 
+// UserResponse matches AuthUser (used by API endpoints like /auth/onboarding/complete)
+export type UserResponse = AuthUser
+
 export interface AuthResponse {
   access_token: string
   token_type: string
