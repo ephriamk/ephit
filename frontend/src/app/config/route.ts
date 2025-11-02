@@ -44,13 +44,13 @@ export async function GET(request: NextRequest) {
     const hostHeader = request.headers.get('host')
 
     if (hostHeader) {
-      // Extract just the hostname (remove port if present)
-      const hostname = hostHeader.split(':')[0]
-
-      // Construct the API URL with port 5055
-      const apiUrl = `${proto}://${hostname}:5055`
+      // For single-container deployments (Render, Docker), use same host
+      // Next.js rewrites handle internal proxying to port 5055
+      // Browser should never try to reach port 5055 directly
+      const apiUrl = `${proto}://${hostHeader}`
 
       console.log(`[runtime-config] Auto-detected API URL: ${apiUrl} (proto=${proto}, host=${hostHeader})`)
+      console.log(`[runtime-config] API requests will go to ${apiUrl}/api/* and be proxied internally`)
 
       return NextResponse.json({
         apiUrl,
@@ -60,9 +60,9 @@ export async function GET(request: NextRequest) {
     console.error('[runtime-config] Auto-detection failed:', error)
   }
 
-  // Priority 3: Fallback to localhost
-  console.log('[runtime-config] Using fallback: http://localhost:5055')
+  // Priority 3: Fallback to localhost for local development
+  console.log('[runtime-config] Using fallback for local development')
   return NextResponse.json({
-    apiUrl: 'http://localhost:5055',
+    apiUrl: '',  // Empty string means use relative URLs (same host as frontend)
   })
 }

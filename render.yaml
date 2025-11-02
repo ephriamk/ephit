@@ -51,7 +51,7 @@ services:
         value: "production"
       
       # Frontend Configuration
-      - key: PORT
-        value: "8502"
+      # PORT is automatically set by Render to a dynamic value
+      # Frontend reads it from environment and binds to that port
       - key: INTERNAL_API_URL
         value: "http://localhost:5055"

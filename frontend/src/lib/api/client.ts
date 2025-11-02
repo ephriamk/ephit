@@ -20,7 +20,9 @@ apiClient.interceptors.request.use(async (config) => {
   // Set the base URL dynamically from runtime config
   if (!config.baseURL) {
     const apiUrl = await getApiUrl()
-    config.baseURL = `${apiUrl}/api`
+    // If apiUrl is empty or relative, just use /api
+    // Otherwise append /api to the full URL
+    config.baseURL = apiUrl ? `${apiUrl}/api` : '/api'
   }
 
   if (typeof window !== 'undefined') {

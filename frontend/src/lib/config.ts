@@ -84,22 +84,20 @@ async function fetchConfig(): Promise<AppConfig> {
   const envApiUrl = process.env.NEXT_PUBLIC_API_URL
   console.log('🔧 [Config] NEXT_PUBLIC_API_URL from build:', envApiUrl || '(not set)')
 
-  // STEP 3: Smart default - infer API URL from current frontend URL
-  // If frontend is at http://10.20.30.20:8502, API should be at http://10.20.30.20:5055
-  let defaultApiUrl = 'http://localhost:5055'
+  // STEP 3: Smart default - use same host as frontend (no port)
+  // For single-container deployments, Next.js rewrites handle proxying
+  // Browser should never try to reach port 5055 directly
+  let defaultApiUrl = ''
 
   if (typeof window !== 'undefined') {
     const hostname = window.location.hostname
     const protocol = window.location.protocol
-    console.log('🔧 [Config] Current frontend URL:', `${protocol}//${hostname}${window.location.port ? ':' + window.location.port : ''}`)
+    const port = window.location.port
+    console.log('🔧 [Config] Current frontend URL:', `${protocol}//${hostname}${port ? ':' + port : ''}`)
 
-    // If not localhost, use the same hostname with port 5055
-    if (hostname !== 'localhost' && hostname !== '127.0.0.1') {
-      defaultApiUrl = `${protocol}//${hostname}:5055`
-      console.log('🔧 [Config] Detected remote hostname, using:', defaultApiUrl)
-    } else {
-      console.log('🔧 [Config] Detected localhost, using:', defaultApiUrl)
-    }
+    // Use same host/port as frontend - Next.js rewrites will proxy to backend
+    defaultApiUrl = `${protocol}//${hostname}${port ? ':' + port : ''}`
+    console.log('🔧 [Config] Using same host for API (will proxy via /api):', defaultApiUrl)
   }
 
   // Priority: Runtime config > Build-time env var > Smart default
