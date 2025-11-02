@@ -50,7 +50,7 @@ function NotebookCard({ notebook, archived = false }: { notebook: NotebookRespon
             <div className="flex items-center gap-4 text-sm">
               <div className="flex items-center gap-2 text-muted-foreground">
                 <Sparkles className="h-4 w-4" />
-                <span>{notebook.sources_count || 0} sources</span>
+                <span>{notebook.source_count || 0} sources</span>
               </div>
             </div>
             

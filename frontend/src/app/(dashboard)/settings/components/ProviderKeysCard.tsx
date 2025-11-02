@@ -48,7 +48,7 @@ function formatTimestamp(value?: string | null) {
   if (!value) return 'Unknown'
   try {
     return new Date(value).toLocaleString()
-  } catch (error) {
+  } catch {
     return value
   }
 }
