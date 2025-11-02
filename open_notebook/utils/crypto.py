@@ -9,6 +9,8 @@ from loguru import logger
 
 FERNET_SECRET_ENV = "FERNET_SECRET_KEY"
 FERNET_SECRET_FILE_ENV = "FERNET_SECRET_FILE"
+# Try persistent storage first (for Docker/Render), then fallback to app directory
+PERSISTENT_SECRET_FILE = Path("/mydata/.secrets/fernet.key")
 DEFAULT_SECRET_FILE = Path(__file__).resolve().parents[2] / ".secrets" / "fernet.key"
 
 
@@ -27,6 +29,9 @@ def _resolve_secret_file() -> Path:
     file_override = os.getenv(FERNET_SECRET_FILE_ENV)
     if file_override:
         return Path(file_override).expanduser().resolve()
+    # Use persistent storage if available (Docker/Render deployments)
+    if PERSISTENT_SECRET_FILE.parent.exists() and PERSISTENT_SECRET_FILE.parent.is_dir():
+        return PERSISTENT_SECRET_FILE
     return DEFAULT_SECRET_FILE
 
 
