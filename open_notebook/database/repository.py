@@ -1,4 +1,5 @@
 import os
+import asyncio
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, TypeVar, Union
@@ -16,9 +17,10 @@ def get_database_url():
         return surreal_url
 
     # Fallback to old format - WebSocket URL format
+    # Fixed: Port must come before path in WebSocket URLs
     address = os.getenv("SURREAL_ADDRESS", "localhost")
     port = os.getenv("SURREAL_PORT", "8000")
-    return f"ws://{address}/rpc:{port}"
+    return f"ws://{address}:{port}/rpc"
 
 
 def get_database_password():
@@ -46,20 +48,53 @@ def ensure_record_id(value: Union[str, RecordID]) -> RecordID:
 
 @asynccontextmanager
 async def db_connection():
-    db = AsyncSurreal(get_database_url())
-    await db.signin(
-        {
-            "username": os.environ.get("SURREAL_USER"),
-            "password": get_database_password(),
-        }
-    )
-    await db.use(
-        os.environ.get("SURREAL_NAMESPACE"), os.environ.get("SURREAL_DATABASE")
-    )
+    """
+    Create a database connection with automatic retry logic.
+    
+    Retries up to 3 times with exponential backoff to handle:
+    - SurrealDB still initializing on startup
+    - Temporary network issues
+    - Root user creation race conditions
+    """
+    max_retries = 3
+    retry_delay = 2  # seconds
+    
+    db = None
+    last_error = None
+    
+    for attempt in range(max_retries):
+        try:
+            db = AsyncSurreal(get_database_url())
+            await db.signin(
+                {
+                    "username": os.environ.get("SURREAL_USER", "root"),
+                    "password": get_database_password() or "root",
+                }
+            )
+            await db.use(
+                os.environ.get("SURREAL_NAMESPACE", "open_notebook"),
+                os.environ.get("SURREAL_DATABASE", "production")
+            )
+            # Connection successful
+            break
+        except Exception as e:
+            last_error = e
+            if attempt < max_retries - 1:
+                logger.warning(
+                    f"Database connection attempt {attempt + 1}/{max_retries} failed: {e}. "
+                    f"Retrying in {retry_delay}s..."
+                )
+                await asyncio.sleep(retry_delay)
+                retry_delay *= 2  # Exponential backoff
+            else:
+                logger.error(f"Database connection failed after {max_retries} attempts")
+                raise
+    
     try:
         yield db
     finally:
-        await db.close()
+        if db:
+            await db.close()
 
 
 async def repo_query(

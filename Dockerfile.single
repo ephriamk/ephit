@@ -83,6 +83,10 @@ EXPOSE 8502 5055
 # Copy single-container supervisord configuration
 COPY supervisord.single.conf /etc/supervisor/conf.d/supervisord.conf
 
+# Copy worker startup script
+COPY start-worker.sh /app/start-worker.sh
+RUN chmod +x /app/start-worker.sh
+
 # Create log directories
 RUN mkdir -p /var/log/supervisor
 
