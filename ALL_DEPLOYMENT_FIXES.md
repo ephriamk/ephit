@@ -45,6 +45,14 @@
 **After:** `"start": "next start -p ${PORT:-10000}"`  
 **Impact:** Consistency for local development
 
+### ✅ Issue #8: Next.js Static Assets Not Served (FIXED) 🔥 CRITICAL
+**File:** `Dockerfile.single:70-86`  
+**Before:** Copied entire `/app` then tried to overwrite frontend standalone  
+**After:** Copy backend separately, then properly structure frontend standalone  
+**Why:** Standalone builds have `server.js` in `.next/standalone/frontend/`, not at root  
+**Impact:** ALL static assets (CSS, JS, fonts) returned 404 - blank page!  
+**Symptom:** Browser console showed 10+ 404 errors for `/_next/static/*` files
+
 ---
 
 ## How Next.js Standalone Server Works

@@ -11,6 +11,7 @@
 6. ✅ Comments updated (no confusing port references)
 7. ✅ Package.json ports (10000 default)
 8. ✅ CORS comments (10000 for local dev)
+9. ✅ **Static assets structure** (standalone/frontend/ path fix) 🔥 CRITICAL
 
 ---
 

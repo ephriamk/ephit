@@ -31,7 +31,7 @@ COPY open_notebook/__init__.py ./open_notebook/__init__.py
 RUN uv sync --frozen --no-dev
 
 # Copy the rest of the application code  
-# Build timestamp: 2025-11-04 (cache buster)
+# Build timestamp: 2025-11-05 (cache buster - static assets fix)
 COPY . /app
 
 # Install frontend dependencies and build
@@ -67,12 +67,22 @@ WORKDIR /app
 # Copy the virtual environment from builder stage
 COPY --from=builder /app/.venv /app/.venv
 
-# Copy the application code
-COPY --from=builder /app /app
+# Copy backend application code (excluding frontend to avoid conflicts)
+COPY --from=builder /app/api /app/api
+COPY --from=builder /app/open_notebook /app/open_notebook
+COPY --from=builder /app/commands /app/commands
+COPY --from=builder /app/prompts /app/prompts
+COPY --from=builder /app/migrations /app/migrations
+COPY --from=builder /app/*.py /app/
+COPY --from=builder /app/pyproject.toml /app/
+COPY --from=builder /app/uv.lock /app/
 
-# Copy built frontend from builder stage
-COPY --from=builder /app/frontend/.next/standalone /app/frontend/
+# Copy frontend standalone build with correct structure
+# Standalone server.js goes to frontend root
+COPY --from=builder /app/frontend/.next/standalone/frontend /app/frontend/
+# Static assets must be at .next/static relative to server.js
 COPY --from=builder /app/frontend/.next/static /app/frontend/.next/static
+# Public folder must be at root relative to server.js  
 COPY --from=builder /app/frontend/public /app/frontend/public
 
 # Create directories for data persistence
