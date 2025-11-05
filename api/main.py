@@ -93,7 +93,7 @@ app = FastAPI(
 protected_dependencies = [Depends(get_current_active_user)]
 
 # CORS Configuration - Restrict origins in production
-# For local dev: set ALLOWED_ORIGINS="http://localhost:3000,http://localhost:8502"
+# For local dev: set ALLOWED_ORIGINS="http://localhost:3000,http://localhost:10000"
 # For production: set ALLOWED_ORIGINS="https://your-domain.com"
 allowed_origins_str = os.environ.get("ALLOWED_ORIGINS", "*")
 allowed_origins = allowed_origins_str.split(",") if allowed_origins_str != "*" else ["*"]

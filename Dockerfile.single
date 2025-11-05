@@ -79,7 +79,9 @@ COPY --from=builder /app/frontend/public /app/frontend/public
 RUN mkdir -p /app/data /mydata
 
 # Expose ports for Frontend and API
-EXPOSE 8502 5055
+# EXPOSE is documentation only - Render assigns PORT dynamically
+# Frontend: reads PORT env var (default 10000), API: 5055
+EXPOSE 10000 5055
 
 # Copy single-container supervisord configuration
 COPY supervisord.single.conf /etc/supervisor/conf.d/supervisord.conf
