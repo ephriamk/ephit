@@ -114,5 +114,5 @@ async def read_current_user(current_user: User = Depends(get_current_active_user
 async def complete_onboarding(current_user: User = Depends(get_current_active_user)):
     """Mark onboarding as complete for the current user."""
     current_user.has_completed_onboarding = True
-    await current_user.update()
+    await current_user.save()
     return build_user_response(current_user)
