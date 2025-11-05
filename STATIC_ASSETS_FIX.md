@@ -11,11 +11,10 @@ Frontend loads but all static assets return 404:
 Next.js standalone build creates this structure:
 ```
 .next/
-  standalone/
-    frontend/        ← Contains server.js and dependencies
-      server.js
-      node_modules/
-    server.js        ← Root server.js (if applicable)
+  standalone/        ← Contains server.js and minimal dependencies
+    server.js        ← Main server file
+    node_modules/    ← Minimal required dependencies
+    package.json
   static/            ← Static assets (CSS, JS, fonts)
     css/
     chunks/
@@ -60,11 +59,11 @@ COPY --from=builder /app/pyproject.toml /app/
 COPY --from=builder /app/uv.lock /app/
 
 # Copy frontend standalone build with correct structure
-# Standalone server.js goes to frontend root
-COPY --from=builder /app/frontend/.next/standalone/frontend /app/frontend/
-# Static assets must be at .next/static relative to server.js
+# Next.js standalone puts everything at .next/standalone/ root
+COPY --from=builder /app/frontend/.next/standalone /app/frontend/
+# Static assets must be copied separately to .next/static
 COPY --from=builder /app/frontend/.next/static /app/frontend/.next/static
-# Public folder must be at root relative to server.js  
+# Public folder must be copied separately
 COPY --from=builder /app/frontend/public /app/frontend/public
 ```
 
@@ -105,7 +104,7 @@ NOT:
 .next/standalone/server.js
 ```
 
-By copying `.next/standalone/frontend` to `/app/frontend/`, we get the correct structure where:
+By copying `.next/standalone/` (which contains server.js at its root) to `/app/frontend/`, we get the correct structure where:
 - `server.js` is at `/app/frontend/server.js`
 - Static assets are at `/app/frontend/.next/static/`
 - Public files are at `/app/frontend/public/`

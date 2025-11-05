@@ -31,7 +31,7 @@ COPY open_notebook/__init__.py ./open_notebook/__init__.py
 RUN uv sync --frozen --no-dev
 
 # Copy the rest of the application code  
-# Build timestamp: 2025-11-05 (cache buster - static assets fix)
+# Build timestamp: 2025-11-05 v2 (cache buster - standalone path fix)
 COPY . /app
 
 # Install frontend dependencies and build
@@ -78,11 +78,11 @@ COPY --from=builder /app/pyproject.toml /app/
 COPY --from=builder /app/uv.lock /app/
 
 # Copy frontend standalone build with correct structure
-# Standalone server.js goes to frontend root
-COPY --from=builder /app/frontend/.next/standalone/frontend /app/frontend/
-# Static assets must be at .next/static relative to server.js
+# Next.js standalone puts everything at .next/standalone/ root
+COPY --from=builder /app/frontend/.next/standalone /app/frontend/
+# Static assets must be copied separately to .next/static
 COPY --from=builder /app/frontend/.next/static /app/frontend/.next/static
-# Public folder must be at root relative to server.js  
+# Public folder must be copied separately
 COPY --from=builder /app/frontend/public /app/frontend/public
 
 # Create directories for data persistence
