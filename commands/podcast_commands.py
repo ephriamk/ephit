@@ -104,22 +104,47 @@ async def generate_podcast_command(
         if input_data.briefing_suffix:
             briefing += f"\n\nAdditional instructions: {input_data.briefing_suffix}"
 
-        # Create the a record for the episose and associate with the ongoing command
-        episode = PodcastEpisode(
-            name=input_data.episode_name,
-            episode_profile=full_model_dump(episode_profile.model_dump()),
-            speaker_profile=full_model_dump(speaker_profile.model_dump()),
-            command=ensure_record_id(input_data.execution_context.command_id)
-            if input_data.execution_context
-            else None,
-            briefing=briefing,
-            content=input_data.content,
-            audio_file=None,
-            transcript=None,
-            outline=None,
-            owner=ensure_record_id(input_data.user_id) if input_data.user_id else None,
-        )
-        await episode.save()
+        # Find existing episode by name and user (created before command submission)
+        # The episode should already exist from podcast_service.py
+        episode = None
+        if input_data.user_id:
+            try:
+                from open_notebook.database.repository import repo_query, ensure_record_id
+                user_record_id = ensure_record_id(input_data.user_id)
+                results = await repo_query(
+                    "SELECT * FROM episode WHERE name = $name AND owner = $owner ORDER BY created DESC LIMIT 1",
+                    {"name": input_data.episode_name, "owner": user_record_id}
+                )
+                if results:
+                    episode = PodcastEpisode(**results[0])
+                    logger.info(f"Found existing episode: {episode.id}")
+                    # Update episode with command reference if not already set
+                    if input_data.execution_context and not episode.command:
+                        episode.command = ensure_record_id(input_data.execution_context.command_id)
+                        await episode.save()
+                        logger.info(f"Updated episode {episode.id} with command reference")
+            except Exception as e:
+                logger.warning(f"Failed to find existing episode: {e}")
+
+        # Fallback: Create episode if not found (shouldn't happen, but for backward compatibility)
+        if not episode:
+            logger.warning(f"Episode not found, creating new one (this shouldn't happen)")
+            episode = PodcastEpisode(
+                name=input_data.episode_name,
+                episode_profile=full_model_dump(episode_profile.model_dump()),
+                speaker_profile=full_model_dump(speaker_profile.model_dump()),
+                command=ensure_record_id(input_data.execution_context.command_id)
+                if input_data.execution_context
+                else None,
+                briefing=briefing,
+                content=input_data.content,
+                audio_file=None,
+                transcript=None,
+                outline=None,
+                owner=ensure_record_id(input_data.user_id) if input_data.user_id else None,
+            )
+            await episode.save()
+            logger.info(f"Created fallback episode: {episode.id}")
 
         configure("speakers_config", {"profiles": speaker_profiles_dict})
         configure("episode_config", {"profiles": episode_profiles_dict})

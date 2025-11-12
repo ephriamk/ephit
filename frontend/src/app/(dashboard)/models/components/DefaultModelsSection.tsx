@@ -7,10 +7,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { ModelDefaults, Model } from '@/lib/types/models'
 import { useUpdateModelDefaults } from '@/lib/hooks/use-models'
 import { AlertCircle, X } from 'lucide-react'
 import { EmbeddingModelChangeDialog } from './EmbeddingModelChangeDialog'
+import { motion } from 'framer-motion'
 
 interface DefaultModelsSectionProps {
   models: Model[]
@@ -151,95 +153,133 @@ export function DefaultModelsSection({ models, defaults }: DefaultModelsSectionP
     .map(config => config.label)
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Default Model Assignments</CardTitle>
-        <CardDescription>
-          Configure which models to use for different purposes across Open Notebook
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        {missingRequired.length > 0 && (
-          <Alert>
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              Missing required models: {missingRequired.join(', ')}. 
-              Open Notebook may not function properly without these.
-            </AlertDescription>
-          </Alert>
-        )}
+    <>
+      <Card className="liquid-glass border-primary/20">
+        <CardHeader>
+          <CardTitle className="text-2xl font-bold">Default Model Assignments</CardTitle>
+          <CardDescription className="mt-2 text-base">
+            Configure which models to use for different purposes across Datara
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {missingRequired.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ type: "spring", stiffness: 300, damping: 25 }}
+            >
+              <Alert className="border-yellow-500/30 bg-yellow-500/10">
+                <AlertCircle className="h-4 w-4 text-yellow-500" />
+                <AlertDescription className="text-foreground">
+                  <strong>Missing required models:</strong> {missingRequired.join(', ')}. 
+                  Datara may not function properly without these.
+                </AlertDescription>
+              </Alert>
+            </motion.div>
+          )}
 
-        <div className="grid gap-6 md:grid-cols-2">
-          {defaultConfigs.map((config) => {
-            const availableModels = getModelsForType(config.modelType)
-            const currentValue = watch(config.key) || undefined
-            
-            // Check if the current value exists in available models
-            const isValidModel = currentValue && availableModels.some(m => m.id === currentValue)
+          <div className="grid gap-6 md:grid-cols-2">
+            {defaultConfigs.map((config, index) => {
+              const availableModels = getModelsForType(config.modelType)
+              const currentValue = watch(config.key) || undefined
+              
+              // Check if the current value exists in available models
+              const isValidModel = currentValue && availableModels.some(m => m.id === currentValue)
+              const selectedModel = currentValue ? models.find(m => m.id === currentValue) : null
 
-            return (
-              <div key={config.key} className="space-y-2">
-                <Label>
-                  {config.label}
-                  {config.required && <span className="text-destructive ml-1">*</span>}
-                </Label>
-                <div className="flex gap-2">
-                  <Select
-                    value={currentValue || ""}
-                    onValueChange={(value) => handleChange(config.key, value)}
-                  >
-                    <SelectTrigger className={
-                      config.required && !isValidModel && availableModels.length > 0
-                        ? 'border-destructive' 
-                        : ''
-                    }>
-                      <SelectValue placeholder={
-                        config.required && !isValidModel && availableModels.length > 0 
-                          ? "⚠️ Required - Select a model"
-                          : "Select a model"
-                      } />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {availableModels.sort((a, b) => a.name.localeCompare(b.name)).map((model) => (
-                        <SelectItem key={model.id} value={model.id}>
-                          <div className="flex items-center justify-between w-full">
-                            <span>{model.name}</span>
-                            <span className="text-xs text-muted-foreground ml-2">
-                              {model.provider}
-                            </span>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {!config.required && currentValue && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleChange(config.key, "")}
-                      className="h-10 w-10"
+              return (
+                <motion.div
+                  key={config.key}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.05 }}
+                  className="space-y-3 p-4 rounded-xl bg-gradient-to-br from-card/50 to-card/30 border border-primary/10 hover:border-primary/30 transition-all"
+                >
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm font-semibold flex items-center gap-2">
+                      {config.label}
+                      {config.required && (
+                        <span className="px-1.5 py-0.5 rounded text-xs bg-destructive/20 text-destructive border border-destructive/30">
+                          Required
+                        </span>
+                      )}
+                    </Label>
+                    {selectedModel && (
+                      <Badge variant="outline" className="text-xs">
+                        {selectedModel.provider}
+                      </Badge>
+                    )}
+                  </div>
+                  <div className="flex gap-2">
+                    <Select
+                      value={currentValue || ""}
+                      onValueChange={(value) => handleChange(config.key, value)}
                     >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  )}
-                </div>
-                <p className="text-xs text-muted-foreground">{config.description}</p>
-              </div>
-            )
-          })}
-        </div>
+                      <SelectTrigger className={
+                        config.required && !isValidModel && availableModels.length > 0
+                          ? 'border-destructive bg-destructive/10' 
+                          : 'border-primary/20 bg-input/50'
+                      }>
+                        <SelectValue placeholder={
+                          config.required && !isValidModel && availableModels.length > 0 
+                            ? "⚠️ Required - Select a model"
+                            : "Select a model"
+                        } />
+                      </SelectTrigger>
+                      <SelectContent className="z-[100]">
+                        {availableModels.sort((a, b) => a.name.localeCompare(b.name)).map((model) => (
+                          <SelectItem key={model.id} value={model.id}>
+                            <div className="flex items-center justify-between w-full">
+                              <span className="font-medium">{model.name}</span>
+                              <span className="text-xs text-muted-foreground ml-2">
+                                {model.provider}
+                              </span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {!config.required && currentValue && (
+                      <motion.div
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                      >
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleChange(config.key, "")}
+                          className="h-10 w-10 border border-primary/20 hover:border-destructive/30 hover:bg-destructive/10"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </motion.div>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground leading-relaxed">{config.description}</p>
+                </motion.div>
+              )
+            })}
+          </div>
 
-        <div className="pt-4 border-t">
-          <a
-            href="https://github.com/lfnovo/open-notebook/blob/main/docs/features/ai-models.md"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-sm text-primary hover:underline"
-          >
-            Which model should I choose? →
-          </a>
-        </div>
-      </CardContent>
+          <div className="pt-6 border-t border-primary/10">
+            <a
+              href="https://github.com/lfnovo/open-notebook/blob/main/docs/features/ai-models.md"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm text-primary hover:underline flex items-center gap-1 group"
+            >
+              Which model should I choose?
+              <motion.span
+                animate={{ x: [0, 4, 0] }}
+                transition={{ duration: 1.5, repeat: Infinity }}
+                className="inline-block"
+              >
+                →
+              </motion.span>
+            </a>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Embedding Model Change Dialog */}
       <EmbeddingModelChangeDialog
@@ -261,6 +301,6 @@ export function DefaultModelsSection({ models, defaults }: DefaultModelsSectionP
             : undefined
         }
       />
-    </Card>
+    </>
   )
 }

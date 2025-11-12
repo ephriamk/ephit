@@ -6,7 +6,6 @@ import { useSources } from '@/lib/hooks/use-sources'
 import { useNotes } from '@/lib/hooks/use-notes'
 import { ChatPanel } from '@/components/source/ChatPanel'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
-import { Card, CardContent } from '@/components/ui/card'
 import { AlertCircle } from 'lucide-react'
 import { ContextSelections } from '../[id]/page'
 
@@ -64,26 +63,22 @@ export function ChatColumn({ notebookId, contextSelections }: ChatColumnProps) {
   // Show loading state while sources/notes are being fetched
   if (sourcesLoading || notesLoading) {
     return (
-      <Card className="h-full flex flex-col">
-        <CardContent className="flex-1 flex items-center justify-center">
-          <LoadingSpinner size="lg" />
-        </CardContent>
-      </Card>
+      <div className="h-full flex items-center justify-center">
+        <LoadingSpinner size="lg" />
+      </div>
     )
   }
 
   // Show error state if data fetch failed (unlikely but good to handle)
   if (!sources && !notes) {
     return (
-      <Card className="h-full flex flex-col">
-        <CardContent className="flex-1 flex items-center justify-center">
-          <div className="text-center text-muted-foreground">
-            <AlertCircle className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <p className="text-sm">Unable to load chat</p>
-            <p className="text-xs mt-2">Please try refreshing the page</p>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="h-full flex items-center justify-center">
+        <div className="text-center text-muted-foreground">
+          <AlertCircle className="h-12 w-12 mx-auto mb-4 opacity-50" />
+          <p className="text-sm">Unable to load chat</p>
+          <p className="text-xs mt-2">Please try refreshing the page</p>
+        </div>
+      </div>
     )
   }
 
@@ -99,6 +94,9 @@ export function ChatColumn({ notebookId, contextSelections }: ChatColumnProps) {
       onModelChange={(model) => {
         if (chat.currentSessionId) {
           chat.updateSession(chat.currentSessionId, { model_override: model ?? null })
+        } else {
+          // If no session exists yet, create one with the model override
+          chat.createSession(undefined, model ?? undefined)
         }
       }}
       sessions={chat.sessions}

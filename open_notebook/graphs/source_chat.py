@@ -1,6 +1,12 @@
 import asyncio
+import os
 import sqlite3
+import sys
 from typing import Annotated, Dict, List, Optional
+
+# Import encoding fix first to ensure UTF-8 encoding
+from open_notebook.utils.encoding_fix import ensure_utf8_encoding
+ensure_utf8_encoding()
 
 from ai_prompter import Prompter
 from langchain_core.messages import SystemMessage
@@ -48,6 +54,8 @@ def call_model_with_source_context(
         new_loop = asyncio.new_event_loop()
         try:
             asyncio.set_event_loop(new_loop)
+            # Ensure UTF-8 encoding in the new event loop's thread
+            os.environ['PYTHONIOENCODING'] = 'utf-8'
             context_builder = ContextBuilder(
                 source_id=source_id,
                 include_insights=True,
@@ -118,6 +126,8 @@ def call_model_with_source_context(
         new_loop = asyncio.new_event_loop()
         try:
             asyncio.set_event_loop(new_loop)
+            # Ensure UTF-8 encoding in the new event loop's thread
+            os.environ['PYTHONIOENCODING'] = 'utf-8'
             return new_loop.run_until_complete(
                 provision_langchain_model(
                     str(payload),
@@ -142,6 +152,8 @@ def call_model_with_source_context(
             model = future.result()
     except RuntimeError:
         # No event loop running, safe to use asyncio.run()
+        # Ensure UTF-8 encoding
+        os.environ['PYTHONIOENCODING'] = 'utf-8'
         model = asyncio.run(
             provision_langchain_model(
                 str(payload),
@@ -152,7 +164,27 @@ def call_model_with_source_context(
             )
         )
 
-    ai_message = model.invoke(payload)
+    # Invoke model with proper error handling for Unicode issues
+    try:
+        ai_message = model.invoke(payload)
+    except UnicodeEncodeError as e:
+        # Log the error with safe encoding
+        import traceback
+        error_msg = f"Unicode encoding error in model.invoke: {e}"
+        try:
+            from loguru import logger
+            logger.error(error_msg)
+            logger.debug(traceback.format_exc())
+        except Exception:
+            pass  # If logging fails, continue
+        # Re-raise with more context
+        raise UnicodeEncodeError(
+            e.encoding,
+            e.object,
+            e.start,
+            e.end,
+            f"{e.reason}. This may be caused by Unicode characters in the chat content."
+        ) from e
 
     # Update state with context information
     return {

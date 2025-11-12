@@ -10,13 +10,13 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          "bg-gradient-to-br from-purple-500/20 via-purple-500/15 to-blue-500/10 text-primary-foreground liquid-glass backdrop-blur-xl border border-white/20 shadow-lg shadow-purple-500/20 hover:shadow-xl hover:shadow-purple-500/30 transition-all duration-300 hover:scale-105 active:scale-100 liquid-glass-button",
+          "bg-gradient-to-br from-[#4A90E2]/30 via-[#4A90E2]/20 to-[#2E66B5]/15 text-primary-foreground liquid-glass backdrop-blur-xl border border-white/20 shadow-lg shadow-[#4A90E2]/30 hover:shadow-xl hover:shadow-[#4A90E2]/40 transition-all duration-300 hover:scale-105 active:scale-100 liquid-glass-button",
         destructive:
           "bg-gradient-to-br from-red-500/20 via-red-500/15 to-pink-500/10 text-white liquid-glass backdrop-blur-xl border border-white/20 shadow-lg shadow-red-500/20 hover:shadow-xl hover:shadow-red-500/30 hover:scale-105 active:scale-100 transition-all duration-300",
         outline:
           "border-2 border-white/30 bg-white/5 backdrop-blur-xl liquid-glass hover:bg-white/10 hover:border-white/40 transition-all duration-300 hover:scale-[1.02] liquid-glass-button",
         secondary:
-          "bg-gradient-to-br from-gray-500/10 via-gray-500/5 to-gray-400/5 backdrop-blur-xl liquid-glass text-secondary-foreground border border-white/15 shadow-sm hover:shadow-md hover:scale-[1.02] transition-all duration-300",
+          "bg-gradient-to-br from-[#2E66B5]/15 via-[#2E66B5]/10 to-[#1C3E75]/8 backdrop-blur-xl liquid-glass text-secondary-foreground border border-white/15 shadow-sm hover:shadow-md hover:scale-[1.02] transition-all duration-300",
         ghost:
           "hover:bg-white/10 hover:text-accent-foreground backdrop-blur-sm hover:scale-105 transition-all duration-300",
         link: "text-primary underline-offset-4 hover:underline hover:text-primary/80 transition-all duration-300",

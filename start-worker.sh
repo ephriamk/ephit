@@ -2,6 +2,11 @@
 # Optional worker startup script
 # Only starts if ENABLE_WORKER is not explicitly set to "false"
 
+# Ensure UTF-8 encoding for Python
+export PYTHONIOENCODING=utf-8
+export LC_ALL=en_US.UTF-8
+export LANG=en_US.UTF-8
+
 ENABLE_WORKER=${ENABLE_WORKER:-true}
 
 if [ "$ENABLE_WORKER" = "false" ]; then

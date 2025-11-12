@@ -155,11 +155,11 @@ export function LoginForm() {
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <Card className="w-full max-w-lg">
         <CardHeader className="text-center space-y-2">
-          <CardTitle className="text-2xl">EphItUp</CardTitle>
+          <CardTitle className="text-2xl">Datara</CardTitle>
           <CardDescription>
             {mode === 'login'
-              ? 'Sign in to access your notebooks and research'
-              : 'Create an account to start organizing your research'}
+              ? 'Sign in to your crypto research workspace'
+              : 'Create your personal crypto research assistant'}
           </CardDescription>
         </CardHeader>
         <CardContent>

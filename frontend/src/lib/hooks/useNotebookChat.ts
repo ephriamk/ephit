@@ -95,10 +95,10 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
       queryClient.invalidateQueries({
         queryKey: QUERY_KEYS.notebookChatSession(currentSessionId!)
       })
-      toast.success('Session updated')
+      toast.success('Model updated')
     },
     onError: () => {
-      toast.error('Failed to update session')
+      toast.error('Failed to update model')
     }
   })
 
@@ -164,7 +164,7 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
     return response.context
   }, [notebookId, sources, notes, contextSelections])
 
-  // Send message (synchronous, no streaming)
+  // Send message with streaming
   const sendMessage = useCallback(async (message: string, modelOverride?: string) => {
     let sessionId = currentSessionId
 
@@ -191,7 +191,7 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
 
     // Add user message optimistically
     const userMessage: NotebookChatMessage = {
-      id: `temp-${Date.now()}`,
+      id: `temp-user-${Date.now()}`,
       type: 'human',
       content: message,
       timestamp: new Date().toISOString()
@@ -200,24 +200,78 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
     setIsSending(true)
 
     try {
-      // Build context and send message
+      // Build context and send message with streaming
       const context = await buildContext()
-      const response = await chatApi.sendMessage({
+      const stream = await chatApi.sendMessageStream({
         session_id: sessionId,
         message,
         context,
         model_override: modelOverride ?? (currentSession?.model_override ?? undefined)
       })
 
-      // Update messages with API response
-      setMessages(response.messages)
+      const reader = stream.getReader()
+      const decoder = new TextDecoder()
+      let aiMessage: NotebookChatMessage | null = null
+
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+
+        const text = decoder.decode(value, { stream: true })
+        const lines = text.split('\n')
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const data = JSON.parse(line.slice(6))
+              
+              if (data.type === 'token') {
+                // Create AI message on first token to avoid empty bubble
+                if (!aiMessage) {
+                  aiMessage = {
+                    id: `ai-${Date.now()}`,
+                    type: 'ai',
+                    content: data.content || '',
+                    timestamp: new Date().toISOString()
+                  }
+                  setMessages(prev => [...prev, aiMessage!])
+                } else {
+                  // Append token to existing message
+                  aiMessage.content += data.content || ''
+                  setMessages(prev =>
+                    prev.map(msg => msg.id === aiMessage!.id
+                      ? { ...msg, content: aiMessage!.content }
+                      : msg
+                    )
+                  )
+                }
+              } else if (data.type === 'ai_message_complete') {
+                // Ensure we have the complete message
+                if (aiMessage) {
+                  aiMessage.content = data.content
+                  setMessages(prev =>
+                    prev.map(msg => msg.id === aiMessage!.id
+                      ? { ...msg, content: data.content }
+                      : msg
+                    )
+                  )
+                }
+              } else if (data.type === 'error') {
+                throw new Error(data.message || 'Stream error')
+              }
+            } catch (e) {
+              console.error('Error parsing SSE data:', e)
+            }
+          }
+        }
+      }
 
       // Refetch current session to get updated data
       await refetchCurrentSession()
     } catch (error) {
       console.error('Error sending message:', error)
       toast.error('Failed to send message')
-      // Remove optimistic message on error
+      // Remove optimistic messages on error
       setMessages(prev => prev.filter(msg => !msg.id.startsWith('temp-')))
     } finally {
       setIsSending(false)
@@ -237,10 +291,11 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
   }, [])
 
   // Create session
-  const createSession = useCallback((title?: string) => {
+  const createSession = useCallback((title?: string, modelOverride?: string) => {
     return createSessionMutation.mutate({
       notebook_id: notebookId,
-      title
+      title,
+      model_override: modelOverride
     })
   }, [createSessionMutation, notebookId])
 

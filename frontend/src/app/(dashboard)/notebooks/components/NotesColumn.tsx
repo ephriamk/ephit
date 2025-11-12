@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import { NoteResponse } from '@/lib/types/api'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,6 +19,7 @@ import { ContextToggle } from '@/components/common/ContextToggle'
 import { ContextMode } from '../[id]/page'
 import { useDeleteNote } from '@/lib/hooks/use-notes'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
+import { motion } from 'framer-motion'
 
 interface NotesColumnProps {
   notes?: NoteResponse[]
@@ -62,40 +62,81 @@ export function NotesColumn({
 
   return (
     <>
-      <Card className="h-full flex flex-col flex-1 overflow-hidden">
-        <CardHeader className="pb-3 flex-shrink-0">
+      <div className="h-full flex flex-col overflow-hidden">
+        <motion.div 
+          className="flex-shrink-0 p-4 border-b border-primary/10"
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ 
+            duration: 0.3,
+            ease: [0.16, 1, 0.3, 1]
+          }}
+        >
           <div className="flex items-center justify-between">
-            <CardTitle className="text-lg">Notes</CardTitle>
-            <Button
-              size="sm"
-              onClick={() => {
-                setEditingNote(null)
-                setShowAddDialog(true)
+            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Notes</h3>
+            <motion.div
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              transition={{ type: "spring", stiffness: 400, damping: 25 }}
+            >
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-8"
+                onClick={() => {
+                  setEditingNote(null)
+                  setShowAddDialog(true)
+                }}
+              >
+                <Plus className="h-3.5 w-3.5 mr-1.5" />
+                Add
+              </Button>
+            </motion.div>
+          </div>
+        </motion.div>
+
+        <div className="flex-1 overflow-y-auto min-h-0 p-4 scroll-smooth">
+          {isLoading ? (
+            <motion.div 
+              className="flex items-center justify-center py-8"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.3 }}
+            >
+              <LoadingSpinner />
+            </motion.div>
+          ) : !notes || notes.length === 0 ? (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ 
+                type: "spring",
+                stiffness: 300,
+                damping: 25
               }}
             >
-              <Plus className="h-4 w-4 mr-2" />
-              Write Note
-            </Button>
-          </div>
-        </CardHeader>
-
-        <CardContent className="flex-1 overflow-y-auto min-h-0">
-          {isLoading ? (
-            <div className="flex items-center justify-center py-8">
-              <LoadingSpinner />
-            </div>
-          ) : !notes || notes.length === 0 ? (
-            <EmptyState
-              icon={StickyNote}
-              title="No notes yet"
-              description="Create your first note to capture insights and observations."
-            />
+              <EmptyState
+                icon={StickyNote}
+                title="No notes yet"
+                description="Create your first note to capture insights and observations."
+              />
+            </motion.div>
           ) : (
             <div className="space-y-3">
-              {notes.map((note) => (
-                <div
+              {notes.map((note, index) => (
+                <motion.div
                   key={note.id}
-                  className="p-3 border rounded-lg card-hover group relative cursor-pointer"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ 
+                    type: "spring",
+                    stiffness: 300,
+                    damping: 25,
+                    delay: index * 0.03
+                  }}
+                  whileHover={{ scale: 1.01, y: -2 }}
+                  whileTap={{ scale: 0.99 }}
+                  className="p-3 border rounded-lg card-hover group relative cursor-pointer transition-all duration-200"
                   onClick={() => setEditingNote(note)}
                 >
                   <div className="flex items-start justify-between mb-2">
@@ -129,14 +170,20 @@ export function NotesColumn({
                       {/* Ellipsis menu for delete action */}
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                            onClick={(e) => e.stopPropagation()}
+                          <motion.div
+                            initial={{ opacity: 0 }}
+                            whileHover={{ opacity: 1 }}
+                            transition={{ duration: 0.2 }}
                           >
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </motion.div>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-48">
                           <DropdownMenuItem
@@ -158,17 +205,17 @@ export function NotesColumn({
                     <h4 className="text-sm font-medium mb-2">{note.title}</h4>
                   )}
                   
-                  {note.content && (
-                    <p className="text-sm text-muted-foreground line-clamp-3">
-                      {note.content}
-                    </p>
-                  )}
-                </div>
+                      {note.content && (
+                        <p className="text-sm text-muted-foreground line-clamp-3">
+                          {note.content}
+                        </p>
+                      )}
+                </motion.div>
               ))}
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       <NoteEditorDialog
         open={showAddDialog || Boolean(editingNote)}

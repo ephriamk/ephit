@@ -44,51 +44,61 @@
 :root, .dark {
   --radius: 1rem;
   
-  /* Bright vibrant glassmorphism theme - single unified theme */
-  --background: oklch(0.98 0.01 285);
-  --foreground: oklch(0.15 0.03 285);
+  /* Datara Color Scheme - Deep Navy Blue Theme */
+  /* Based on logo colors: #001F4D (navy), #4A90E2 (light blue), #2E66B5 (medium blue), #1C3E75 (dark blue) */
   
-  --card: oklch(0.99 0.01 285 / 0.6);
-  --card-foreground: oklch(0.20 0.03 285);
+  /* Background: Deep navy blue (#001F4D) */
+  --background: oklch(0.25 0.15 250);
+  --foreground: oklch(1 0 0); /* White text */
   
-  --popover: oklch(1 0 0 / 0.85);
-  --popover-foreground: oklch(0.15 0.02 285);
+  /* Cards: Semi-transparent navy with glass effect */
+  --card: oklch(0.30 0.12 250 / 0.7);
+  --card-foreground: oklch(0.95 0.01 250);
   
-  /* Vibrant purple-blue gradient primary */
-  --primary: oklch(0.65 0.28 265);
+  /* Popovers: Dark navy with transparency */
+  --popover: oklch(0.28 0.14 250 / 0.95);
+  --popover-foreground: oklch(1 0 0);
+  
+  /* Primary: Light blue from logo (#4A90E2) */
+  --primary: oklch(0.65 0.20 250);
   --primary-foreground: oklch(1 0 0);
   
-  --secondary: oklch(0.96 0.015 280);
-  --secondary-foreground: oklch(0.25 0.03 285);
+  /* Secondary: Medium blue (#2E66B5) */
+  --secondary: oklch(0.50 0.20 250);
+  --secondary-foreground: oklch(1 0 0);
   
-  --muted: oklch(0.95 0.015 285 / 0.5);
-  --muted-foreground: oklch(0.45 0.03 285);
+  /* Muted: Darker navy tones */
+  --muted: oklch(0.35 0.12 250 / 0.5);
+  --muted-foreground: oklch(0.75 0.05 250);
   
-  --accent: oklch(0.93 0.02 285);
-  --accent-foreground: oklch(0.30 0.035 285);
+  /* Accent: Lighter blue for highlights */
+  --accent: oklch(0.55 0.18 250);
+  --accent-foreground: oklch(1 0 0);
   
+  /* Destructive: Keep red for errors */
   --destructive: oklch(0.65 0.25 15);
   
-  --border: oklch(0.85 0.02 285 / 0.4);
-  --input: oklch(0.95 0.02 285 / 0.7);
-  --ring: oklch(0.65 0.28 265);
+  /* Borders and inputs: Navy with transparency */
+  --border: oklch(0.40 0.15 250 / 0.4);
+  --input: oklch(0.35 0.12 250 / 0.7);
+  --ring: oklch(0.65 0.20 250); /* Light blue for focus rings */
   
-  /* Vibrant chart colors */
-  --chart-1: oklch(0.68 0.28 285);
-  --chart-2: oklch(0.65 0.26 195);
-  --chart-3: oklch(0.70 0.24 320);
-  --chart-4: oklch(0.72 0.22 80);
-  --chart-5: oklch(0.66 0.23 45);
+  /* Chart colors: Blue spectrum from logo */
+  --chart-1: oklch(0.65 0.20 250); /* Light blue */
+  --chart-2: oklch(0.55 0.20 250); /* Medium-light blue */
+  --chart-3: oklch(0.50 0.20 250); /* Medium blue */
+  --chart-4: oklch(0.45 0.18 250); /* Darker blue */
+  --chart-5: oklch(0.40 0.15 250); /* Dark blue */
   
-  /* Glass-morphism nav */
-  --sidebar: oklch(0.99 0.015 285 / 0.85);
-  --sidebar-foreground: oklch(0.25 0.03 285);
-  --sidebar-primary: oklch(0.65 0.28 265);
+  /* Sidebar: Dark navy with glass effect */
+  --sidebar: oklch(0.28 0.14 250 / 0.85);
+  --sidebar-foreground: oklch(0.95 0.01 250);
+  --sidebar-primary: oklch(0.65 0.20 250); /* Light blue */
   --sidebar-primary-foreground: oklch(1 0 0);
-  --sidebar-accent: oklch(0.95 0.025 285);
-  --sidebar-accent-foreground: oklch(0.35 0.035 285);
-  --sidebar-border: oklch(0.88 0.02 285 / 0.6);
-  --sidebar-ring: oklch(0.65 0.28 265);
+  --sidebar-accent: oklch(0.40 0.15 250);
+  --sidebar-accent-foreground: oklch(0.95 0.01 250);
+  --sidebar-border: oklch(0.40 0.15 250 / 0.6);
+  --sidebar-ring: oklch(0.65 0.20 250);
 }
 
 @layer base {
@@ -102,12 +112,13 @@
   
   body {
     @apply bg-background text-foreground transition-colors;
+    /* Datara deep navy background with subtle blue gradients */
     background: 
-      radial-gradient(ellipse at 0% 0%, oklch(0.75 0.20 265 / 0.15), transparent 60%),
-      radial-gradient(ellipse at 100% 0%, oklch(0.70 0.18 320 / 0.12), transparent 60%),
-      radial-gradient(ellipse at 0% 100%, oklch(0.72 0.16 285 / 0.10), transparent 60%),
-      radial-gradient(ellipse at 100% 100%, oklch(0.68 0.19 195 / 0.12), transparent 60%),
-      linear-gradient(135deg, oklch(0.95 0.01 265), oklch(0.98 0.005 285), oklch(0.95 0.01 320));
+      radial-gradient(ellipse at 0% 0%, oklch(0.50 0.20 250 / 0.20), transparent 60%),
+      radial-gradient(ellipse at 100% 0%, oklch(0.55 0.18 250 / 0.15), transparent 60%),
+      radial-gradient(ellipse at 0% 100%, oklch(0.45 0.18 250 / 0.15), transparent 60%),
+      radial-gradient(ellipse at 100% 100%, oklch(0.50 0.20 250 / 0.20), transparent 60%),
+      linear-gradient(135deg, oklch(0.25 0.15 250), oklch(0.28 0.14 250), oklch(0.25 0.15 250));
     background-attachment: fixed;
   }
   
@@ -138,25 +149,30 @@
       rgba(255, 255, 255, 0.15),
       rgba(255, 255, 255, 0.08)
     );
-    backdrop-filter: blur(30px) saturate(200%);
-    -webkit-backdrop-filter: blur(30px) saturate(200%);
+    /* Reduced blur from 30px to 15px for better performance */
+    backdrop-filter: blur(15px) saturate(150%);
+    -webkit-backdrop-filter: blur(15px) saturate(150%);
     border: 1px solid rgba(255, 255, 255, 0.3);
     position: relative;
     overflow: hidden;
+    /* Performance hints */
+    will-change: transform;
+    transform: translateZ(0);
   }
 
   .liquid-glass::before {
     content: '';
     position: absolute;
     inset: 0;
+    /* Datara blue gradient overlay */
     background: linear-gradient(
       135deg,
-      rgba(147, 51, 234, 0.1) 0%,
-      rgba(59, 130, 246, 0.08) 50%,
-      rgba(236, 72, 153, 0.06) 100%
+      rgba(74, 144, 226, 0.15) 0%,
+      rgba(46, 102, 181, 0.12) 50%,
+      rgba(28, 62, 117, 0.10) 100%
     );
     pointer-events: none;
-    opacity: 0.5;
+    opacity: 0.6;
   }
 
   .liquid-glass::after {
@@ -175,59 +191,47 @@
     pointer-events: none;
   }
 
-  /* Specular highlights - shimmer effect */
+  /* Specular highlights - shimmer effect (disabled - no pulsing) */
   .specular-highlight {
     position: relative;
     overflow: hidden;
   }
 
+  /* Disabled shimmer animation - keeping class for compatibility */
   .specular-highlight::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(
-      90deg,
-      transparent,
-      rgba(255, 255, 255, 0.3),
-      transparent
-    );
-    animation: shimmer 3s infinite;
-    pointer-events: none;
+    display: none;
   }
 
-  @keyframes shimmer {
-    0% { left: -100%; }
-    100% { left: 100%; }
-  }
-
-  /* Bottom nav with vibrant liquid glass */
+  /* Bottom nav with vibrant liquid glass - OPTIMIZED */
   .bottom-nav {
     background: linear-gradient(
       to top,
       rgba(255, 255, 255, 0.18) 0%,
       rgba(255, 255, 255, 0.12) 100%
     );
-    backdrop-filter: blur(60px) saturate(200%);
-    -webkit-backdrop-filter: blur(60px) saturate(200%);
+    /* Reduced blur from 60px to 20px for better performance */
+    backdrop-filter: blur(20px) saturate(150%);
+    -webkit-backdrop-filter: blur(20px) saturate(150%);
     border-top: 1px solid rgba(255, 255, 255, 0.3);
     position: relative;
+    /* Performance hints */
+    will-change: transform;
+    transform: translateZ(0);
   }
 
   .bottom-nav::before {
     content: '';
     position: absolute;
     inset: 0;
+    /* Datara blue gradient */
     background: linear-gradient(
       135deg,
-      rgba(147, 51, 234, 0.15) 0%,
-      rgba(59, 130, 246, 0.12) 100%
+      rgba(74, 144, 226, 0.20) 0%,
+      rgba(46, 102, 181, 0.15) 100%
     );
     pointer-events: none;
   }
-
+  
   .bottom-nav::after {
     content: '';
     position: absolute;
@@ -235,26 +239,29 @@
     left: 0;
     right: 0;
     height: 1px;
+    /* Datara blue accent line */
     background: linear-gradient(
       90deg,
       transparent,
-      rgba(147, 51, 234, 0.5),
-      rgba(59, 130, 246, 0.5),
+      rgba(74, 144, 226, 0.6),
+      rgba(46, 102, 181, 0.6),
       transparent
     );
   }
   
-  /* Enhanced hover effects for cards */
+  /* Enhanced hover effects for cards - OPTIMIZED */
   .card-hover {
-    @apply transition-all duration-300 cursor-pointer;
+    @apply cursor-pointer;
+    transition: background-color 200ms ease, border-color 200ms ease, transform 200ms ease, opacity 200ms ease, box-shadow 200ms ease;
     transform: translateY(0);
   }
   
   .card-hover:hover {
     transform: translateY(-4px);
+    /* Datara blue shadows */
     box-shadow: 
-      0 20px 40px -8px rgba(147, 51, 234, 0.15),
-      0 15px 25px -5px rgba(59, 130, 246, 0.1),
+      0 20px 40px -8px rgba(74, 144, 226, 0.25),
+      0 15px 25px -5px rgba(46, 102, 181, 0.15),
       0 0 0 1px rgba(255, 255, 255, 0.2);
   }
   
@@ -265,13 +272,13 @@
     -webkit-backdrop-filter: blur(20px) saturate(180%);
   }
   
-  /* Animated gradient background */
+  /* Animated gradient background - Datara blue spectrum */
   .gradient-bg {
     background: linear-gradient(
       135deg,
-      oklch(0.65 0.28 265) 0%,
-      oklch(0.68 0.26 320) 50%,
-      oklch(0.66 0.27 195) 100%
+      oklch(0.65 0.20 250) 0%,
+      oklch(0.55 0.20 250) 50%,
+      oklch(0.50 0.20 250) 100%
     );
     background-size: 200% 200%;
     animation: gradient-shift 8s ease infinite;
@@ -328,12 +335,12 @@
   }
   
   ::-webkit-scrollbar-thumb {
-    background: oklch(0.60 0.02 285);
+    background: oklch(0.50 0.15 250);
     border-radius: 4px;
   }
   
   ::-webkit-scrollbar-thumb:hover {
-    background: oklch(0.55 0.03 285);
+    background: oklch(0.55 0.18 250);
   }
   
   /* Responsive bottom navigation adjustments */

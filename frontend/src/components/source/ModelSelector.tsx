@@ -48,9 +48,11 @@ export function ModelSelector({
     if (!models) {
       return []
     }
-    return [...models]
+    const filtered = [...models]
       .filter((model) => model.type === 'language')
       .sort((a, b) => a.name.localeCompare(b.name))
+    console.log('Language models:', filtered.length, filtered)
+    return filtered
   }, [models])
 
   const defaultModel = useMemo(() => {
@@ -94,7 +96,7 @@ export function ModelSelector({
           </span>
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[425px] z-[100]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Sparkles className="h-5 w-5" />
@@ -108,35 +110,35 @@ export function ModelSelector({
           <div className="grid gap-2">
             <Label htmlFor="model">Model</Label>
             <Select value={selectedModel} onValueChange={setSelectedModel}>
-              <SelectTrigger id="model">
+              <SelectTrigger id="model" className="w-full">
                 <SelectValue placeholder="Select a model (or use default)" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="z-[200] max-h-[300px]">
                 <SelectItem value="default">
-                  <div className="flex items-center justify-between w-full">
-                    <span>
-                      {defaultModel ? `Default (${defaultModel.name})` : 'System Default'}
+                  {defaultModel ? `Default (${defaultModel.name})` : 'System Default'}
+                  {defaultModel?.provider && (
+                    <span className="text-xs text-muted-foreground ml-2">
+                      {defaultModel.provider}
                     </span>
-                    {defaultModel?.provider && (
-                      <span className="text-xs text-muted-foreground ml-2">
-                        {defaultModel.provider}
-                      </span>
-                    )}
-                  </div>
+                  )}
                 </SelectItem>
                 {isLoading ? (
-                  <div className="flex items-center justify-center py-2">
+                  <div className="flex items-center justify-center py-2 px-2">
                     <LoadingSpinner size="sm" />
+                  </div>
+                ) : languageModels.length === 0 ? (
+                  <div className="py-2 px-2 text-center text-sm text-muted-foreground">
+                    {isLoading ? 'Loading models...' : 'No language models available. Add models in Settings → Models.'}
                   </div>
                 ) : (
                   languageModels.map((model) => (
                     <SelectItem key={model.id} value={model.id}>
-                      <div className="flex items-center justify-between w-full">
-                        <span>{model.name}</span>
+                      <span className="font-medium">{model.name}</span>
+                      {model.provider && (
                         <span className="text-xs text-muted-foreground ml-2">
-                          {model.provider}
+                          ({model.provider})
                         </span>
-                      </div>
+                      )}
                     </SelectItem>
                   ))
                 )}

@@ -1,4 +1,5 @@
 import apiClient from './client'
+import { getApiUrl } from '@/lib/config'
 import {
   NotebookChatSession,
   NotebookChatSessionWithMessages,
@@ -57,6 +58,55 @@ export const chatApi = {
       data
     )
     return response.data
+  },
+
+  // Streaming messaging
+  sendMessageStream: async (data: SendNotebookChatMessageRequest): Promise<ReadableStream<Uint8Array>> => {
+    // Get the API URL dynamically (same as apiClient interceptor)
+    const apiUrl = await getApiUrl()
+    const baseURL = apiUrl ? `${apiUrl}/api` : '/api'
+    const url = `${baseURL}/chat/execute/stream`
+    
+    // Get auth token from localStorage (same as apiClient interceptor)
+    let authToken: string | undefined
+    if (typeof window !== 'undefined') {
+      const authStorage = localStorage.getItem('auth-storage')
+      if (authStorage) {
+        try {
+          const { state } = JSON.parse(authStorage)
+          authToken = state?.accessToken ?? state?.token
+        } catch (error) {
+          console.error('Error parsing auth storage:', error)
+        }
+      }
+    }
+    
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      'Accept': 'text/event-stream',
+    }
+    
+    if (authToken) {
+      headers['Authorization'] = `Bearer ${authToken}`
+    }
+    
+    const response = await fetch(url, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(data),
+      credentials: 'include',
+    })
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ detail: 'Network error' }))
+      throw new Error(error.detail || 'Failed to send message')
+    }
+
+    if (!response.body) {
+      throw new Error('Response body is null')
+    }
+
+    return response.body
   },
 
   buildContext: async (data: BuildContextRequest) => {

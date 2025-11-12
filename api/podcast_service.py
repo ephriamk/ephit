@@ -9,6 +9,18 @@ from open_notebook.domain.notebook import Notebook
 from open_notebook.domain.podcast import EpisodeProfile, PodcastEpisode, SpeakerProfile
 
 
+def full_model_dump(model):
+    """Helper to recursively dump Pydantic models"""
+    if isinstance(model, BaseModel):
+        return model.model_dump()
+    elif isinstance(model, dict):
+        return {k: full_model_dump(v) for k, v in model.items()}
+    elif isinstance(model, list):
+        return [full_model_dump(item) for item in model]
+    else:
+        return model
+
+
 class PodcastGenerationRequest(BaseModel):
     """Request model for podcast generation"""
 
@@ -94,6 +106,26 @@ class PodcastService:
                 logger.error(f"Failed to import podcast commands: {import_err}")
                 raise ValueError("Podcast commands not available")
 
+            # Create episode record BEFORE submitting command so it appears immediately in UI
+            from open_notebook.database.repository import ensure_record_id
+            from open_notebook.domain.podcast import PodcastEpisode
+            
+            # Create episode with pending status
+            episode = PodcastEpisode(
+                name=episode_name,
+                episode_profile=full_model_dump(episode_profile.model_dump()),
+                speaker_profile=full_model_dump(speaker_profile.model_dump()),
+                command=None,  # Will be set after command submission
+                briefing=episode_profile.default_briefing + (f"\n\nAdditional instructions: {briefing_suffix}" if briefing_suffix else ""),
+                content=str(content),
+                audio_file=None,
+                transcript=None,
+                outline=None,
+                owner=ensure_record_id(user_id) if user_id else None,
+            )
+            await episode.save()
+            logger.info(f"Created episode record: {episode.id} for '{episode_name}'")
+
             # Submit command to surreal-commands
             job_id = submit_command("open_notebook", "generate_podcast", command_args)
 
@@ -101,6 +133,12 @@ class PodcastService:
             if not job_id:
                 raise ValueError("Failed to get job_id from submit_command")
             job_id_str = str(job_id)
+            
+            # Update episode with command reference
+            episode.command = ensure_record_id(job_id_str)
+            await episode.save()
+            logger.info(f"Updated episode {episode.id} with command reference: {job_id_str}")
+            
             logger.info(
                 f"Submitted podcast generation job: {job_id_str} for episode '{episode_name}'"
             )

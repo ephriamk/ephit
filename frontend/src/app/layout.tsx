@@ -11,8 +11,8 @@ import { themeScript } from "@/lib/theme-script";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "EphItUp",
-  description: "Privacy-focused research and knowledge management",
+  title: "Datara",
+  description: "Your personal crypto research assistant",
 };
 
 export default function RootLayout({

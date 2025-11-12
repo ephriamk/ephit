@@ -117,12 +117,12 @@ export function AppSidebar() {
           {isCollapsed ? (
             <div className="relative flex items-center justify-center w-full group">
               <div className="relative z-10 p-2 rounded-xl bg-primary/10 backdrop-blur-sm">
-                <Image
-                  src="/logo.svg"
-                  alt="Open Notebook"
+                <img
+                  src="/datara.jpg"
+                  alt="Datara"
                   width={24}
                   height={24}
-                  className="transition-all duration-300"
+                  className="transition-all duration-300 rounded-md"
                 />
               </div>
               <Button
@@ -138,13 +138,13 @@ export function AppSidebar() {
             <>
               <div className="flex items-center gap-3 z-10">
                 <div className="p-2 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 backdrop-blur-sm shadow-lg">
-                  <Image src="/logo.svg" alt="Open Notebook" width={28} height={28} className="relative z-10" />
+                  <img src="/datara.jpg" alt="Datara" width={28} height={28} className="relative z-10 rounded-md" />
                 </div>
                 <div className="flex flex-col">
                   <span className="text-base font-bold text-sidebar-foreground tracking-tight">
-                    Open Notebook
+                    Datara
                   </span>
-                  <span className="text-xs text-muted-foreground">Research Hub</span>
+                  <span className="text-xs text-muted-foreground">Crypto Research</span>
                 </div>
               </div>
               <Button

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import { CreateModelRequest, ProviderAvailability } from '@/lib/types/models'
 import { Button } from '@/components/ui/button'
@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { useCreateModel } from '@/lib/hooks/use-models'
 import { Plus } from 'lucide-react'
+import { ModelSelector } from './ModelSelector'
 
 interface AddModelFormProps {
   modelType: 'language' | 'embedding' | 'text_to_speech' | 'speech_to_text'
@@ -19,13 +20,22 @@ interface AddModelFormProps {
 export function AddModelForm({ modelType, providers }: AddModelFormProps) {
   const [open, setOpen] = useState(false)
   const createModel = useCreateModel()
-  const { register, handleSubmit, formState: { errors }, reset, control, watch } = useForm<CreateModelRequest>({
+  const { register, handleSubmit, formState: { errors }, reset, control, watch, setValue, clearErrors } = useForm<CreateModelRequest>({
     defaultValues: {
       type: modelType,
       provider: '',
       name: ''
     }
   })
+
+  // Watch provider changes
+  const currentProvider = watch('provider')
+  
+  // Clear name field when provider changes
+  useEffect(() => {
+    setValue('name', '')
+    clearErrors('name')
+  }, [currentProvider, setValue, clearErrors])
 
   // Get available providers that support this model type
   const availableProviders = providers.available.filter(provider =>
@@ -132,10 +142,33 @@ export function AddModelForm({ modelType, providers }: AddModelFormProps) {
 
           <div className="space-y-2">
             <Label htmlFor="name">Model Name</Label>
-            <Input
-              id="name"
-              {...register('name', { required: 'Model name is required' })}
-              placeholder={getModelPlaceholder()}
+            <Controller
+              name="name"
+              control={control}
+              rules={{ required: 'Model name is required' }}
+              render={({ field }) => (
+                watch('provider') === 'openrouter' ? (
+                  <ModelSelector
+                    value={field.value}
+                    onValueChange={(val) => {
+                      console.log('Model selected:', val)
+                      field.onChange(val)
+                      clearErrors('name')
+                    }}
+                    modelType={modelType}
+                    provider={watch('provider') || ''}
+                    disabled={createModel.isPending}
+                  />
+                ) : (
+                  <Input
+                    id="name"
+                    value={field.value}
+                    onChange={field.onChange}
+                    placeholder={getModelPlaceholder()}
+                    disabled={createModel.isPending}
+                  />
+                )
+              )}
             />
             {errors.name && (
               <p className="text-sm text-destructive">{errors.name.message}</p>
@@ -143,6 +176,11 @@ export function AddModelForm({ modelType, providers }: AddModelFormProps) {
             {modelType === 'language' && watch('provider') === 'azure' && (
               <p className="text-xs text-muted-foreground">
                 For Azure, use the deployment name as the model name
+              </p>
+            )}
+            {watch('provider') === 'openrouter' && (
+              <p className="text-xs text-muted-foreground">
+                Select a model from OpenRouter's catalog. Models are fetched in real-time.
               </p>
             )}
           </div>

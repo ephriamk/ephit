@@ -49,18 +49,18 @@ export function TopNav() {
                 <div className="relative">
                   <div className="absolute inset-0 bg-primary/20 rounded-xl blur-lg group-hover:blur-xl transition-all duration-300"></div>
                   <Image 
-                    src="/logo.svg" 
-                    alt="Open Notebook" 
+                    src="/datara.jpg" 
+                    alt="Datara" 
                     width={32} 
                     height={32}
-                    className="relative z-10 group-hover:scale-110 transition-transform duration-300"
+                    className="relative z-10 group-hover:scale-110 transition-transform duration-300 rounded-md"
                   />
                 </div>
                 <div className="hidden sm:block">
                   <div className="text-lg font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-                    Open Notebook
+                    Datara
                   </div>
-                  <div className="text-xs text-muted-foreground">Research Hub</div>
+                  <div className="text-xs text-muted-foreground">Crypto Research</div>
                 </div>
               </Link>
 

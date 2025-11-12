@@ -8,6 +8,7 @@ from api.security import get_current_active_user
 from open_notebook.domain.notebook import Note
 from open_notebook.domain.user import User
 from open_notebook.exceptions import InvalidInputError
+from open_notebook.utils.provider_env import user_provider_context
 
 router = APIRouter()
 
@@ -68,12 +69,14 @@ async def create_note(
         if not title and note_data.note_type == "ai" and note_data.content:
             from open_notebook.graphs.prompt import graph as prompt_graph
             prompt = "Based on the Note below, please provide a Title for this content, with max 15 words"
-            result = await prompt_graph.ainvoke(
-                {  # type: ignore[arg-type]
-                    "input_text": note_data.content,
-                    "prompt": prompt
-                }
-            )
+            # Use user's API keys for AI operations
+            async with user_provider_context(current_user.id):
+                result = await prompt_graph.ainvoke(
+                    {  # type: ignore[arg-type]
+                        "input_text": note_data.content,
+                        "prompt": prompt
+                    }
+                )
             title = result.get("output", "Untitled Note")
         
         # Validate note_type

@@ -353,6 +353,12 @@ export function useGeneratePodcast() {
     onSuccess: async (response) => {
       // Immediately refetch to show the new episode
       await queryClient.refetchQueries({ queryKey: QUERY_KEYS.podcastEpisodes })
+      
+      // Also refetch after a short delay to catch status updates
+      setTimeout(() => {
+        queryClient.refetchQueries({ queryKey: QUERY_KEYS.podcastEpisodes })
+      }, 2000)
+      
       toast({
         title: 'Podcast generation started',
         description: `Episode "${response.episode_name}" is being created.`,

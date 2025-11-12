@@ -1,7 +1,9 @@
 import asyncio
-from typing import Any, Dict, List, Optional
+import json
+from typing import Any, AsyncGenerator, Dict, List, Optional
 
 from fastapi import APIRouter, HTTPException, Query, Depends
+from fastapi.responses import StreamingResponse
 from langchain_core.runnables import RunnableConfig
 from loguru import logger
 from pydantic import BaseModel, Field
@@ -384,9 +386,184 @@ async def execute_chat(request: ExecuteChatRequest, current_user: User = Depends
         return ExecuteChatResponse(session_id=request.session_id, messages=messages)
     except NotFoundError:
         raise HTTPException(status_code=404, detail="Session not found")
+    except UnicodeEncodeError as e:
+        import traceback
+        error_msg = f"Unicode encoding error in chat execution: {e}"
+        logger.error(error_msg)
+        logger.debug(traceback.format_exc())
+        # Provide a more helpful error message
+        raise HTTPException(
+            status_code=500,
+            detail="Chat execution failed due to Unicode encoding issue. Please ensure all text content uses valid UTF-8 encoding."
+        )
     except Exception as e:
-        logger.error(f"Error executing chat: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error executing chat: {str(e)}")
+        import traceback
+        error_msg = f"Error executing chat: {e}"
+        logger.error(error_msg)
+        logger.debug(traceback.format_exc())
+        # Safely convert error to string, handling Unicode
+        try:
+            error_detail = str(e)
+        except UnicodeEncodeError:
+            error_detail = repr(e)
+        raise HTTPException(status_code=500, detail=f"Error executing chat: {error_detail}")
+
+
+async def stream_chat_response(
+    session_id: str,
+    message: str,
+    context: Dict[str, Any],
+    model_override: Optional[str],
+    user_id: str
+) -> AsyncGenerator[str, None]:
+    """Stream the chat response as Server-Sent Events with true token streaming."""
+    try:
+        # Ensure session_id has proper table prefix
+        full_session_id = (
+            session_id
+            if session_id.startswith("chat_session:")
+            else f"chat_session:{session_id}"
+        )
+        
+        # Get current state
+        current_state = chat_graph.get_state(
+            config=RunnableConfig(
+                configurable={"thread_id": session_id}
+            )
+        )
+        
+        # Prepare state for execution
+        state_values = current_state.values if current_state else {}
+        state_values["messages"] = state_values.get("messages", [])
+        state_values["context"] = context
+        state_values["model_override"] = model_override
+        
+        # Add user message to state
+        from langchain_core.messages import HumanMessage
+        
+        user_message = HumanMessage(content=message)
+        state_values["messages"].append(user_message)
+        
+        # Send user message event
+        user_event = {
+            "type": "user_message",
+            "content": message,
+            "timestamp": None
+        }
+        yield f"data: {json.dumps(user_event)}\n\n"
+        
+        # Execute chat without streaming for now (streaming requires provider-specific setup)
+        # Use async graph for execution
+        from open_notebook.graphs.chat import get_async_graph
+        async_graph = await get_async_graph()
+        
+        collected_content = ""
+        
+        async with user_provider_context(user_id):
+            # Execute graph without streaming
+            result = await async_graph.ainvoke(
+                input=state_values,  # type: ignore[arg-type]
+                config=RunnableConfig(
+                    configurable={
+                        "thread_id": session_id,
+                        "model_id": model_override,
+                    }
+                )
+            )
+            
+            # Extract AI message from result
+            if "messages" in result:
+                for msg in result["messages"]:
+                    if hasattr(msg, "type") and msg.type == "ai":
+                        if hasattr(msg, "content") and msg.content:
+                            collected_content = msg.content
+                            # Send as single token event (simulating streaming for frontend compatibility)
+                            token_event = {
+                                "type": "token",
+                                "content": msg.content
+                            }
+                            yield f"data: {json.dumps(token_event)}\n\n"
+                            break
+        
+        # Send the complete AI message
+        if collected_content:
+            ai_message_event = {
+                "type": "ai_message_complete",
+                "content": collected_content,
+                "timestamp": None
+            }
+            yield f"data: {json.dumps(ai_message_event)}\n\n"
+        
+        # Send completion signal
+        completion_event = {"type": "complete"}
+        yield f"data: {json.dumps(completion_event)}\n\n"
+        
+        # Update session timestamp after streaming completes
+        try:
+            session = await ChatSession.get(full_session_id)
+            if session:
+                await session.save()
+        except Exception as e:
+            logger.warning(f"Failed to update session timestamp: {e}")
+        
+    except Exception as e:
+        logger.error(f"Error in chat streaming: {str(e)}")
+        import traceback
+        logger.debug(traceback.format_exc())
+        error_event = {
+            "type": "error",
+            "message": str(e) if not isinstance(e, UnicodeEncodeError) else "Unicode encoding error"
+        }
+        yield f"data: {json.dumps(error_event)}\n\n"
+
+
+@router.post("/chat/execute/stream")
+async def execute_chat_stream(
+    request: ExecuteChatRequest,
+    current_user: User = Depends(get_current_active_user)
+):
+    """Execute a chat request with streaming AI response."""
+    try:
+        # Verify session exists
+        full_session_id = (
+            request.session_id
+            if request.session_id.startswith("chat_session:")
+            else f"chat_session:{request.session_id}"
+        )
+        session = await ChatSession.get(full_session_id)
+        if not session:
+            raise HTTPException(status_code=404, detail="Session not found")
+        
+        # Determine model override
+        model_override = (
+            request.model_override
+            if request.model_override is not None
+            else getattr(session, "model_override", None)
+        )
+        
+        # Return streaming response
+        return StreamingResponse(
+            stream_chat_response(
+                session_id=request.session_id,
+                message=request.message,
+                context=request.context,
+                model_override=model_override,
+                user_id=current_user.id
+            ),
+            media_type="text/event-stream",
+            headers={
+                "Cache-Control": "no-cache",
+                "Connection": "keep-alive",
+                "Content-Type": "text/event-stream",
+                "X-Accel-Buffering": "no"
+            }
+        )
+        
+    except NotFoundError:
+        raise HTTPException(status_code=404, detail="Session not found")
+    except Exception as e:
+        logger.error(f"Error starting chat stream: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error starting chat stream: {str(e)}")
 
 
 @router.post("/chat/context", response_model=BuildContextResponse)

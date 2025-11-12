@@ -17,14 +17,14 @@ interface OnboardingStep {
 
 const onboardingSteps: OnboardingStep[] = [
   {
-    title: 'Welcome to EphItUp',
-    description: 'Your AI-powered research and knowledge management platform',
+    title: 'Welcome to Datara',
+    description: 'Your personal crypto research assistant',
     icon: <Notebook className="h-12 w-12 text-primary" />,
     features: [
-      'Organize your research with notebooks',
-      'Upload documents and sources',
-      'Generate AI-powered podcasts',
-      'Create and manage notes'
+      'Organize crypto research with notebooks',
+      'Upload whitepapers and documents',
+      'Generate AI-powered research podcasts',
+      'Track insights and analysis'
     ]
   },
   {
@@ -41,46 +41,46 @@ const onboardingSteps: OnboardingStep[] = [
   },
   {
     title: 'Create Your First Notebook',
-    description: 'Notebooks help you organize your research topics',
+    description: 'Notebooks help you organize crypto research topics',
     icon: <FileText className="h-12 w-12 text-primary" />,
     features: [
       'Click "Create Notebook" to get started',
-      'Give it a descriptive name',
-      'Add sources and notes inside',
-      'Organize by topic or project'
+      'Organize by project or token',
+      'Add sources and analysis inside',
+      'Track your research journey'
     ]
   },
   {
     title: 'Upload Sources & Documents',
-    description: 'Add PDFs, text files, and other documents',
+    description: 'Add whitepapers, articles, and crypto documents',
     icon: <FileText className="h-12 w-12 text-primary" />,
     features: [
-      'Upload documents from your computer',
+      'Upload PDFs and documents',
       'Paste text or URLs',
-      'AI will extract and organize content',
+      'AI extracts and organizes content',
       'Query your sources with AI'
     ]
   },
   {
     title: 'Generate AI Podcasts',
-    description: 'Turn your research into engaging conversations',
+    description: 'Turn your crypto research into engaging conversations',
     icon: <Sparkles className="h-12 w-12 text-primary" />,
     features: [
-      'Select a topic or notebook',
+      'Select a research topic or notebook',
       'Choose speakers and personalities',
       'AI generates a conversational podcast',
-      'Download and listen on any device'
+      'Listen to your research insights'
     ]
   },
   {
-    title: 'Take Notes & Collaborate',
-    description: 'Capture insights and ideas as you work',
+    title: 'Take Notes & Track Insights',
+    description: 'Capture analysis and ideas as you research',
     icon: <CheckCircle2 className="h-12 w-12 text-primary" />,
     features: [
       'Create notes linked to sources',
       'Use markdown for formatting',
-      'Search across all your content',
-      'Export your work anytime'
+      'Search across all your research',
+      'Export your analysis anytime'
     ]
   }
 ]

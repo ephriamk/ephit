@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import { SourceListResponse } from '@/lib/types/api'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,6 +19,7 @@ import { useDeleteSource, useRetrySource, useRemoveSourceFromNotebook } from '@/
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
 import { useModalManager } from '@/lib/hooks/use-modal-manager'
 import { ContextMode } from '../[id]/page'
+import { motion } from 'framer-motion'
 
 interface SourcesColumnProps {
   sources?: SourceListResponse[]
@@ -103,17 +103,36 @@ export function SourcesColumn({
     openModal('source', sourceId)
   }
   return (
-    <Card className="h-full flex flex-col flex-1 overflow-hidden">
-      <CardHeader className="pb-3 flex-shrink-0">
+    <div className="h-full flex flex-col overflow-hidden">
+      <motion.div 
+        className="flex-shrink-0 p-4 border-b border-primary/10"
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ 
+          duration: 0.3,
+          ease: [0.16, 1, 0.3, 1]
+        }}
+      >
         <div className="flex items-center justify-between">
-          <CardTitle className="text-lg">Sources</CardTitle>
+          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Sources</h3>
           <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
             <DropdownMenuTrigger asChild>
-              <Button size="sm">
-                <Plus className="h-4 w-4 mr-2" />
-                Add Source
-                <ChevronDown className="h-4 w-4 ml-2" />
-              </Button>
+              <motion.div
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                transition={{ type: "spring", stiffness: 400, damping: 25 }}
+              >
+                <Button size="sm" variant="outline" className="h-8">
+                  <Plus className="h-3.5 w-3.5 mr-1.5" />
+                  Add
+                  <motion.div
+                    animate={{ rotate: dropdownOpen ? 180 : 0 }}
+                    transition={{ type: "spring", stiffness: 300, damping: 25 }}
+                  >
+                    <ChevronDown className="h-3.5 w-3.5 ml-1.5" />
+                  </motion.div>
+                </Button>
+              </motion.div>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={() => { setDropdownOpen(false); setAddDialogOpen(true); }}>
@@ -127,41 +146,67 @@ export function SourcesColumn({
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
-      </CardHeader>
+      </motion.div>
 
-      <CardContent className="flex-1 overflow-y-auto min-h-0">
+      <div className="flex-1 overflow-y-auto min-h-0 p-4 scroll-smooth">
         {isLoading ? (
-          <div className="flex items-center justify-center py-8">
+          <motion.div 
+            className="flex items-center justify-center py-8"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.3 }}
+          >
             <LoadingSpinner />
-          </div>
+          </motion.div>
         ) : !sources || sources.length === 0 ? (
-          <EmptyState
-            icon={FileText}
-            title="No sources yet"
-            description="Add your first source to start building your knowledge base."
-          />
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ 
+              type: "spring",
+              stiffness: 300,
+              damping: 25
+            }}
+          >
+            <EmptyState
+              icon={FileText}
+              title="No sources yet"
+              description="Add your first source to start building your knowledge base."
+            />
+          </motion.div>
         ) : (
           <div className="space-y-3">
-            {sources.map((source) => (
-              <SourceCard
+            {sources.map((source, index) => (
+              <motion.div
                 key={source.id}
-                source={source}
-                onClick={handleSourceClick}
-                onDelete={handleDeleteClick}
-                onRetry={handleRetry}
-                onRemoveFromNotebook={handleRemoveFromNotebook}
-                onRefresh={onRefresh}
-                showRemoveFromNotebook={true}
-                contextMode={contextSelections?.[source.id]}
-                onContextModeChange={onContextModeChange
-                  ? (mode) => onContextModeChange(source.id, mode)
-                  : undefined
-                }
-              />
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ 
+                  type: "spring",
+                  stiffness: 300,
+                  damping: 25,
+                  delay: index * 0.03
+                }}
+              >
+                <SourceCard
+                  source={source}
+                  onClick={handleSourceClick}
+                  onDelete={handleDeleteClick}
+                  onRetry={handleRetry}
+                  onRemoveFromNotebook={handleRemoveFromNotebook}
+                  onRefresh={onRefresh}
+                  showRemoveFromNotebook={true}
+                  contextMode={contextSelections?.[source.id]}
+                  onContextModeChange={onContextModeChange
+                    ? (mode) => onContextModeChange(source.id, mode)
+                    : undefined
+                  }
+                />
+              </motion.div>
             ))}
           </div>
         )}
-      </CardContent>
+      </div>
       
       <AddSourceDialog
         open={addDialogOpen}
@@ -197,6 +242,6 @@ export function SourcesColumn({
         isLoading={removeFromNotebook.isPending}
         confirmVariant="default"
       />
-    </Card>
+    </div>
   )
 }

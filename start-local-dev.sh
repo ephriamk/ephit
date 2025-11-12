@@ -40,6 +40,11 @@ fi
 echo -e "${BLUE}📦 Activating virtual environment...${NC}"
 source .venv/bin/activate
 
+# Ensure UTF-8 encoding for Python
+export PYTHONIOENCODING=utf-8
+export LC_ALL=en_US.UTF-8
+export LANG=en_US.UTF-8
+
 # Check if dependencies are installed
 if ! python3 -c "import fastapi" 2>/dev/null; then
     echo -e "${YELLOW}⚠️  Python dependencies not found. Installing...${NC}"
@@ -100,13 +105,19 @@ echo -e "${GREEN}✅ Backend API running on http://localhost:5055 (PID: $API_PID
 
 # Start Worker
 echo -e "${BLUE}⚙️  Starting Background Worker...${NC}"
-./start-worker.sh &
+chmod +x start-worker.sh 2>/dev/null
+if command -v uv &> /dev/null; then
+    uv run surreal-commands-worker --import-modules commands > /tmp/datara-worker.log 2>&1 &
+else
+    bash start-worker.sh > /tmp/datara-worker.log 2>&1 &
+fi
 WORKER_PID=$!
 sleep 3
 
 # Check if Worker started
 if ! kill -0 $WORKER_PID 2>/dev/null; then
     echo -e "${YELLOW}⚠️  Worker failed to start (check dependencies)${NC}"
+    echo -e "${YELLOW}   Check logs: tail -f /tmp/datara-worker.log${NC}"
 else
     echo -e "${GREEN}✅ Worker running (PID: $WORKER_PID)${NC}"
 fi

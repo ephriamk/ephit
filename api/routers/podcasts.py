@@ -110,9 +110,8 @@ async def list_podcast_episodes(
 
         response_episodes = []
         for episode in episodes:
-            # Skip incomplete episodes without command or audio
-            if not episode.command and not episode.audio_file:
-                continue
+            # Include all episodes - even if they don't have command or audio yet
+            # This ensures newly created episodes show up immediately
             
             # Get job status if available
             job_status = None
@@ -123,7 +122,11 @@ async def list_podcast_episodes(
                     job_status = "unknown"
             else:
                 # No command but has audio file = completed import
-                job_status = "completed"
+                if episode.audio_file:
+                    job_status = "completed"
+                else:
+                    # Newly created episode without command yet = pending
+                    job_status = "pending"
 
             audio_url = None
             if episode.audio_file:

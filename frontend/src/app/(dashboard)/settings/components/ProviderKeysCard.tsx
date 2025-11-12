@@ -189,7 +189,7 @@ export function ProviderKeysCard() {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        <div className="space-y-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div>
             <Label htmlFor="provider-select">Provider</Label>
             <Select
@@ -270,8 +270,7 @@ export function ProviderKeysCard() {
               </Button>
             )}
             <Button
-              type="button"
-              onClick={handleSubmit(onSubmit)}
+              type="submit"
               disabled={isSubmitting || upsertSecret.isPending || !selectedProvider}
             >
               {(isSubmitting || upsertSecret.isPending) && (
@@ -280,7 +279,7 @@ export function ProviderKeysCard() {
               {editingProvider ? 'Update Key' : 'Save Key'}
             </Button>
           </div>
-        </div>
+        </form>
 
         <div className="space-y-3">
           <div className="flex items-center gap-2">

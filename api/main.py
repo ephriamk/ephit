@@ -1,6 +1,10 @@
 import os
 from contextlib import asynccontextmanager
 
+# Import encoding fix early to ensure UTF-8 encoding throughout the application
+from open_notebook.utils.encoding_fix import ensure_utf8_encoding
+ensure_utf8_encoding()
+
 from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from loguru import logger

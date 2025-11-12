@@ -1,7 +1,7 @@
 'use client'
 
 import { useAuth } from '@/lib/hooks/use-auth'
-import { useVersionCheck } from '@/lib/hooks/use-version-check'
+// import { useVersionCheck } from '@/lib/hooks/use-version-check' // Disabled version check notifications
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
@@ -17,8 +17,8 @@ export default function DashboardLayout({
   const router = useRouter()
   const [hasCheckedAuth, setHasCheckedAuth] = useState(false)
 
-  // Check for version updates once per session
-  useVersionCheck()
+  // Check for version updates once per session - DISABLED
+  // useVersionCheck()
 
   useEffect(() => {
     // Mark that we've completed the initial auth check

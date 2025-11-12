@@ -82,7 +82,7 @@ function StatusBadge({ status }: { status?: EpisodeStatus | null }) {
     return null
   }
 
-  const meta = STATUS_META[status ?? 'unknown']
+  const meta = STATUS_META[status ?? 'unknown'] ?? STATUS_META.unknown
   return (
     <Badge
       variant="outline"

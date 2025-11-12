@@ -4,86 +4,164 @@ import { useMemo, useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { AppShell } from '@/components/layout/AppShell'
 import { Button } from '@/components/ui/button'
-import { Plus, RefreshCw, Search, BookOpen, Calendar, Sparkles } from 'lucide-react'
+import { Plus, RefreshCw, Search, FileText, Clock, TrendingUp, Archive, Grid3x3, List, Zap, Activity, Layers, ArrowRight, Sparkles } from 'lucide-react'
 import { useNotebooks } from '@/lib/hooks/use-notebooks'
 import { CreateNotebookDialog, NOTEBOOK_CREATED_EVENT } from '@/components/notebooks/CreateNotebookDialog'
 import { Input } from '@/components/ui/input'
-import { Card, CardContent } from '@/components/ui/card'
 import { formatDistanceToNow } from 'date-fns'
 import { Badge } from '@/components/ui/badge'
 import { OnboardingDialog } from '@/components/onboarding/OnboardingDialog'
 import { useAuthStore } from '@/lib/stores/auth-store'
 import { completeOnboarding } from '@/lib/api/onboarding'
 import type { NotebookResponse } from '@/lib/types/api'
+import { motion, AnimatePresence } from 'framer-motion'
 
-// Modern Notebook Card Component
-function NotebookCard({ notebook, archived = false }: { notebook: NotebookResponse, archived?: boolean }) {
+type ViewMode = 'grid' | 'list'
+
+// Completely new card design - Dashboard widget style
+function NotebookCard({ notebook, archived = false, index }: { notebook: NotebookResponse, archived?: boolean, index: number }) {
   return (
-    <Link href={`/notebooks/${notebook.id}`}>
-      <Card className="h-full group hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] cursor-pointer overflow-hidden relative specular-highlight">
-        {/* Gradient Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-        
-        {/* Side Accent Bar */}
-        <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-primary opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-r-full" />
-        
-        <CardContent className="p-6 relative">
-          {/* Header */}
-          <div className="flex items-start justify-between mb-4">
-            <div className="flex-1 min-w-0">
-              <h3 className="text-lg font-bold mb-1 truncate group-hover:text-primary transition-colors">
-                {notebook.name}
-              </h3>
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.95 }}
+      transition={{ duration: 0.4, delay: index * 0.05 }}
+      whileHover={{ y: -4 }}
+      className="group h-full"
+    >
+      <Link href={`/notebooks/${notebook.id}`}>
+        <div className="relative h-full min-h-[240px] rounded-xl border-2 border-primary/20 bg-gradient-to-br from-card/90 to-card/60 backdrop-blur-xl overflow-hidden cursor-pointer transition-all duration-300 hover:border-primary/50 hover:shadow-xl hover:shadow-primary/20">
+          {/* Content */}
+          <div className="p-6 h-full flex flex-col">
+            {/* Header */}
+            <div className="flex items-start justify-between mb-4">
+              <div className="flex-1 min-w-0">
+                <h3 className="text-lg font-bold mb-1.5 line-clamp-2 group-hover:text-primary transition-colors">
+                  {notebook.name}
+                </h3>
+                {notebook.description && (
+                  <p className="text-xs text-muted-foreground line-clamp-2">
+                    {notebook.description}
+                  </p>
+                )}
+              </div>
               {archived && (
-                <Badge variant="secondary" className="mt-2">
-                  Archived
+                <Badge variant="secondary" className="ml-3 shrink-0 bg-primary/20 border-primary/30 text-primary text-xs">
+                  <Archive className="h-3 w-3 mr-1" />
                 </Badge>
               )}
             </div>
-            <div className="p-2 rounded-xl bg-primary/10 group-hover:bg-primary/20 transition-colors shrink-0">
-              <BookOpen className="h-5 w-5 text-primary" />
-            </div>
-          </div>
-
-          {/* Stats */}
-          <div className="space-y-3">
-            <div className="flex items-center gap-4 text-sm">
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Sparkles className="h-4 w-4" />
-                <span>{notebook.source_count || 0} sources</span>
+            
+            {/* Stats section */}
+            <div className="flex items-center gap-4 mb-5">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center">
+                  <FileText className="h-4 w-4 text-primary" />
+                </div>
+                <div>
+                  <div className="text-lg font-bold text-primary">{notebook.source_count || 0}</div>
+                  <div className="text-xs text-muted-foreground">Sources</div>
+                </div>
               </div>
             </div>
             
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Calendar className="h-3 w-3" />
-              <span>
-                {formatDistanceToNow(new Date(notebook.updated), { addSuffix: true })}
-              </span>
+            {/* Footer */}
+            <div className="mt-auto pt-4 border-t border-primary/10 flex items-center justify-between">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Clock className="h-3.5 w-3.5" />
+                <span>{formatDistanceToNow(new Date(notebook.updated), { addSuffix: true }).split(' ')[0]}</span>
+              </div>
+              <motion.div
+                animate={{ x: 0 }}
+                whileHover={{ x: 4 }}
+                transition={{ duration: 0.2 }}
+              >
+                <ArrowRight className="h-4 w-4 text-primary" />
+              </motion.div>
             </div>
           </div>
+        </div>
+      </Link>
+    </motion.div>
+  )
+}
 
-          {/* Description */}
-          {notebook.description && (
-            <p className="mt-4 text-sm text-muted-foreground line-clamp-2">
-              {notebook.description}
-            </p>
-          )}
-        </CardContent>
-      </Card>
-    </Link>
+// New list item - Compact and clean
+function NotebookListItem({ notebook, archived = false, index }: { notebook: NotebookResponse, archived?: boolean, index: number }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: -20 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: 20 }}
+      transition={{ duration: 0.3, delay: index * 0.03 }}
+      className="group"
+    >
+      <Link href={`/notebooks/${notebook.id}`}>
+        <div className="relative p-4 rounded-xl border-2 border-primary/20 bg-gradient-to-r from-card/90 to-card/60 backdrop-blur-xl overflow-hidden cursor-pointer transition-all duration-300 hover:border-primary/50 hover:shadow-lg">
+          <div className="flex items-center gap-4">
+            {/* Icon */}
+            <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-primary/30 to-primary/10 flex items-center justify-center border-2 border-primary/30 shrink-0 group-hover:border-primary/60 transition-colors">
+              <FileText className="h-6 w-6 text-primary" />
+            </div>
+            
+            {/* Content */}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-start justify-between gap-3 mb-1.5">
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-base font-semibold mb-0.5 truncate group-hover:text-primary transition-colors">
+                    {notebook.name}
+                  </h3>
+                  {notebook.description && (
+                    <p className="text-xs text-muted-foreground line-clamp-1">
+                      {notebook.description}
+                    </p>
+                  )}
+                </div>
+                {archived && (
+                  <Badge variant="secondary" className="shrink-0 bg-primary/20 border-primary/30 text-primary text-xs">
+                    <Archive className="h-3 w-3 mr-1" />
+                  </Badge>
+                )}
+              </div>
+              
+              {/* Metadata */}
+              <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                <div className="flex items-center gap-1.5">
+                  <Activity className="h-3.5 w-3.5 text-primary" />
+                  <span className="font-medium">{notebook.source_count || 0} sources</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <Clock className="h-3.5 w-3.5 text-primary" />
+                  <span>{formatDistanceToNow(new Date(notebook.updated), { addSuffix: true })}</span>
+                </div>
+              </div>
+            </div>
+            
+            {/* Arrow */}
+            <motion.div
+              initial={{ opacity: 0.5 }}
+              whileHover={{ opacity: 1, x: 4 }}
+              className="flex-shrink-0"
+            >
+              <ArrowRight className="h-5 w-5 text-primary" />
+            </motion.div>
+          </div>
+        </div>
+      </Link>
+    </motion.div>
   )
 }
 
 export default function NotebooksPage() {
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
+  const [viewMode, setViewMode] = useState<ViewMode>('grid')
   const { data: notebooks, isLoading, refetch } = useNotebooks(false)
   const { data: archivedNotebooks } = useNotebooks(true)
   const mainContentRef = useRef<HTMLDivElement>(null)
   const { user, setSession, accessToken } = useAuthStore()
   const [showOnboarding, setShowOnboarding] = useState(false)
 
-  // Check if user needs onboarding
   useEffect(() => {
     if (user && !user.has_completed_onboarding) {
       setShowOnboarding(true)
@@ -96,7 +174,6 @@ export default function NotebooksPage() {
     setShowOnboarding(false)
     try {
       await completeOnboarding()
-      // Update user in store to reflect onboarding completion
       if (user && accessToken) {
         const updatedUser = { ...user, has_completed_onboarding: true }
         setSession({
@@ -107,35 +184,21 @@ export default function NotebooksPage() {
       }
     } catch (error) {
       console.error('Failed to complete onboarding:', error)
-      // Still close the dialog even if API call fails
       setShowOnboarding(false)
     }
   }
 
   const normalizedQuery = searchTerm.trim().toLowerCase()
 
-  // Listen for notebook creation and scroll to top
   useEffect(() => {
     const handleNotebookCreated = () => {
-      // Wait for query to invalidate and rerender
       setTimeout(() => {
-        // Scroll to show the notebooks section with smooth animation
         if (mainContentRef.current) {
           mainContentRef.current.scrollIntoView({ 
             behavior: 'smooth', 
             block: 'start',
             inline: 'nearest'
           })
-        } else {
-          // Fallback: try to find the main content div and scroll
-          const mainContent = document.querySelector('[class*="max-w-7xl mx-auto px-4"]')
-          if (mainContent) {
-            mainContent.scrollIntoView({ 
-              behavior: 'smooth', 
-              block: 'start',
-              inline: 'nearest'
-            })
-          }
         }
       }, 500)
     }
@@ -147,165 +210,325 @@ export default function NotebooksPage() {
   }, [])
 
   const filteredActive = useMemo(() => {
-    if (!notebooks) {
-      return undefined
-    }
-    if (!normalizedQuery) {
-      return notebooks
-    }
+    if (!notebooks) return undefined
+    if (!normalizedQuery) return notebooks
     return notebooks.filter((notebook) =>
-      notebook.name.toLowerCase().includes(normalizedQuery)
+      notebook.name.toLowerCase().includes(normalizedQuery) ||
+      notebook.description?.toLowerCase().includes(normalizedQuery)
     )
   }, [notebooks, normalizedQuery])
 
   const filteredArchived = useMemo(() => {
-    if (!archivedNotebooks) {
-      return undefined
-    }
-    if (!normalizedQuery) {
-      return archivedNotebooks
-    }
+    if (!archivedNotebooks) return undefined
+    if (!normalizedQuery) return archivedNotebooks
     return archivedNotebooks.filter((notebook) =>
-      notebook.name.toLowerCase().includes(normalizedQuery)
+      notebook.name.toLowerCase().includes(normalizedQuery) ||
+      notebook.description?.toLowerCase().includes(normalizedQuery)
     )
   }, [archivedNotebooks, normalizedQuery])
 
   const hasArchived = (archivedNotebooks?.length ?? 0) > 0
   const isSearching = normalizedQuery.length > 0
+  const totalNotebooks = (notebooks?.length ?? 0) + (archivedNotebooks?.length ?? 0)
+  const totalSources = notebooks?.reduce((sum, nb) => sum + (nb.source_count || 0), 0) ?? 0
 
   return (
     <AppShell>
-      <div className="relative">
-          {/* Hero Section - Liquid Glass */}
-        <div className="relative px-4 sm:px-6 py-8 sm:py-12">
-          <div className="max-w-7xl mx-auto">
-            <div className="flex flex-col sm:flex-row items-start sm:justify-between gap-6 sm:gap-8">
-              <div className="flex-1 w-full sm:w-auto">
-                <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-3 tracking-tight">
-                  Your Notebooks
-                </h1>
-                <p className="text-base sm:text-lg text-muted-foreground mb-6">
-                  Organize your research and knowledge in one place
-                </p>
-                
-                {/* Quick stats - Liquid Glass */}
-                <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
-                  <div className="px-4 sm:px-5 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl liquid-glass backdrop-blur-xl border border-border/20 shadow-lg">
-                    <div className="text-2xl sm:text-3xl font-bold text-primary mb-1">
-                      {(notebooks?.length ?? 0) + (archivedNotebooks?.length ?? 0)}
-                    </div>
-                    <div className="text-xs text-muted-foreground uppercase tracking-wider">Total</div>
-                  </div>
-                </div>
-              </div>
-              
-              {/* Floating Action Button */}
-              <Button 
-                size="lg"
-                onClick={() => setCreateDialogOpen(true)}
-                className="w-full sm:w-auto rounded-2xl shadow-2xl shadow-primary/30 hover:shadow-primary/40 liquid-glass backdrop-blur-2xl transition-all duration-300 hover:scale-105"
+      <div className="relative min-h-screen">
+        {/* Header */}
+        <div className="relative border-b border-primary/20 bg-background/80 backdrop-blur-xl sticky top-0 z-40">
+          <div className="max-w-7xl mx-auto px-6 py-6">
+            <div className="flex flex-col gap-6">
+              {/* Title Row */}
+              <motion.div
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+                className="flex items-start justify-between gap-4"
               >
-                <Plus className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
-                <span className="hidden sm:inline">New Notebook</span>
-                <span className="sm:hidden">New</span>
-              </Button>
+                <div>
+                  <h1 className="text-3xl sm:text-4xl font-bold mb-2 bg-gradient-to-r from-foreground via-primary to-foreground bg-clip-text text-transparent">
+                    Research Workspace
+                  </h1>
+                  <p className="text-sm text-muted-foreground flex items-center gap-2">
+                    <Zap className="h-4 w-4 text-primary" />
+                    Manage your crypto research projects
+                  </p>
+                </div>
+                <motion.div
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <Button 
+                    onClick={() => setCreateDialogOpen(true)}
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    New Project
+                  </Button>
+                </motion.div>
+              </motion.div>
+
+              {/* Stats Dashboard */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.1 }}
+                className="grid grid-cols-2 sm:grid-cols-4 gap-4"
+              >
+                {[
+                  { label: 'Projects', value: totalNotebooks, icon: Layers },
+                  { label: 'Active', value: notebooks?.length ?? 0, icon: Activity },
+                  { label: 'Sources', value: totalSources, icon: FileText },
+                  { label: 'Archived', value: archivedNotebooks?.length ?? 0, icon: Archive },
+                ].map((stat, index) => (
+                  <motion.div
+                    key={stat.label}
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.3, delay: 0.2 + index * 0.1 }}
+                    whileHover={{ scale: 1.05, y: -4 }}
+                    className="relative p-4 rounded-xl border-2 border-primary/20 bg-gradient-to-br from-card/80 via-card/60 to-card/40 backdrop-blur-xl overflow-hidden group"
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-br from-primary/0 via-primary/10 to-primary/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-xl" />
+                    <div className="relative z-10">
+                      <div className="flex items-center justify-between mb-2">
+                        <stat.icon className="h-5 w-5 text-primary" />
+                        <motion.div
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          transition={{ delay: 0.3 + index * 0.1, type: 'spring' }}
+                          className="text-2xl font-bold text-primary"
+                        >
+                          {stat.value}
+                        </motion.div>
+                      </div>
+                      <div className="text-xs text-muted-foreground uppercase tracking-wider font-medium">
+                        {stat.label}
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+              </motion.div>
+
+              {/* Search and Controls */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.3 }}
+                className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3"
+              >
+                <div className="flex-1 relative group">
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                  <Input
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    placeholder="Search projects..."
+                    className="pl-11 bg-background/50 border-primary/20 focus:border-primary/50 focus:ring-primary/20"
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+                    <Button
+                      variant={viewMode === 'grid' ? 'default' : 'outline'}
+                      size="icon"
+                      onClick={() => setViewMode('grid')}
+                      className="shrink-0"
+                    >
+                      <Grid3x3 className="h-4 w-4" />
+                    </Button>
+                  </motion.div>
+                  <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+                    <Button
+                      variant={viewMode === 'list' ? 'default' : 'outline'}
+                      size="icon"
+                      onClick={() => setViewMode('list')}
+                      className="shrink-0"
+                    >
+                      <List className="h-4 w-4" />
+                    </Button>
+                  </motion.div>
+                  <motion.div whileHover={{ rotate: 180 }} transition={{ duration: 0.3 }}>
+                    <Button 
+                      variant="outline" 
+                      size="icon" 
+                      onClick={() => refetch()}
+                      className="shrink-0"
+                    >
+                      <RefreshCw className="h-4 w-4" />
+                    </Button>
+                  </motion.div>
+                </div>
+              </motion.div>
             </div>
           </div>
         </div>
 
         {/* Main Content */}
-        <div ref={mainContentRef} className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
-          {/* Search and Filters - Liquid Glass */}
-          <div className="mb-6 sm:mb-8 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground z-10" />
-              <Input
-                value={searchTerm}
-                onChange={(event) => setSearchTerm(event.target.value)}
-                placeholder="Search notebooks..."
-                className="pl-9 sm:pl-12"
-              />
-            </div>
-            <Button 
-              variant="outline" 
-              size="icon" 
-              onClick={() => refetch()}
-              className="shrink-0 rounded-xl sm:rounded-2xl liquid-glass backdrop-blur-xl w-full sm:w-auto"
+        <div ref={mainContentRef} className="max-w-7xl mx-auto px-6 py-8">
+          <div className="space-y-10">
+            {/* Active Projects - New Layout */}
+            <motion.section
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.5, delay: 0.4 }}
             >
-              <RefreshCw className="h-4 w-4 sm:h-5 sm:w-5" />
-            </Button>
-          </div>
-
-          {/* Masonry Grid Layout */}
-          <div className="space-y-12">
-            {/* Active Notebooks */}
-            <section>
-              <div className="mb-6 flex items-center justify-between">
-                <div>
-                  <h2 className="text-2xl font-bold">Active</h2>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Your current research projects
-                  </p>
+              {/* Section Header */}
+              <div className="mb-6">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary/30 to-primary/10 border-2 border-primary/30 flex items-center justify-center">
+                      <Activity className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <h2 className="text-xl font-bold flex items-center gap-2">
+                        <span>Active Projects</span>
+                        {filteredActive && filteredActive.length > 0 && (
+                          <motion.span
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            transition={{ type: 'spring' }}
+                            className="px-2 py-0.5 rounded-full bg-primary/20 border border-primary/30 text-xs font-bold text-primary"
+                          >
+                            {filteredActive.length}
+                          </motion.span>
+                        )}
+                      </h2>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {filteredActive?.length ?? 0} {filteredActive?.length === 1 ? 'project' : 'projects'} currently active
+                      </p>
+                    </div>
+                  </div>
+                  
+                  {filteredActive && filteredActive.length > 0 && (
+                    <motion.div
+                      animate={{ scale: [1, 1.1, 1] }}
+                      transition={{ duration: 2, repeat: Infinity }}
+                      className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-primary/10 border border-primary/20"
+                    >
+                      <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+                      <span className="text-xs font-semibold text-primary">Live</span>
+                    </motion.div>
+                  )}
                 </div>
+                
+                {/* Progress bar */}
+                {filteredActive && filteredActive.length > 0 && (
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: '100%' }}
+                    transition={{ duration: 1, delay: 0.5 }}
+                    className="h-1 bg-gradient-to-r from-primary via-primary/50 to-transparent rounded-full"
+                  />
+                )}
               </div>
               
               {isLoading ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                <div className={viewMode === 'grid' 
+                  ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5"
+                  : "space-y-3"
+                }>
                   {[1, 2, 3].map((i) => (
-                    <div key={i} className="h-64 rounded-2xl bg-muted animate-pulse" />
+                    <motion.div
+                      key={i}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: i * 0.1 }}
+                      className={`${viewMode === 'grid' ? 'h-64' : 'h-20'} rounded-xl bg-muted/30 border-2 border-primary/10 animate-pulse`}
+                    />
                   ))}
                 </div>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                <AnimatePresence mode="wait">
                   {filteredActive && filteredActive.length > 0 ? (
-                    filteredActive.map((notebook) => (
-                      <NotebookCard key={notebook.id} notebook={notebook} />
-                    ))
+                    <motion.div
+                      key="active-list"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      className={viewMode === 'grid' 
+                        ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5"
+                        : "space-y-3"
+                      }
+                    >
+                      {filteredActive.map((notebook, index) => (
+                        viewMode === 'grid' ? (
+                          <NotebookCard key={notebook.id} notebook={notebook} index={index} />
+                        ) : (
+                          <NotebookListItem key={notebook.id} notebook={notebook} index={index} />
+                        )
+                      ))}
+                    </motion.div>
                   ) : (
-                    <div className="col-span-full py-16 text-center">
-                      <div className="text-6xl mb-4">📝</div>
-                      <h3 className="text-xl font-semibold mb-2">
-                        {isSearching ? 'No notebooks match your search' : 'No notebooks yet'}
+                    <motion.div
+                      key="empty"
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.95 }}
+                      className="py-16 text-center border-2 border-dashed border-primary/30 rounded-xl bg-gradient-to-br from-card/50 to-card/30 backdrop-blur-xl"
+                    >
+                      <div className="text-5xl mb-4">📊</div>
+                      <h3 className="text-lg font-semibold mb-2">
+                        {isSearching ? 'No projects match your search' : 'No active projects'}
                       </h3>
-                      <p className="text-muted-foreground mb-6">
-                        {isSearching ? 'Try using a different term' : 'Create your first notebook to get started'}
+                      <p className="text-sm text-muted-foreground mb-6">
+                        {isSearching ? 'Try a different search term' : 'Create your first research project to get started'}
                       </p>
                       {!isSearching && (
-                        <Button onClick={() => setCreateDialogOpen(true)} size="lg">
-                          <Plus className="h-5 w-5 mr-2" />
-                          Create Your First Notebook
-                        </Button>
+                        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                          <Button onClick={() => setCreateDialogOpen(true)}>
+                            <Plus className="h-4 w-4 mr-2" />
+                            Create Project
+                          </Button>
+                        </motion.div>
                       )}
-                    </div>
+                    </motion.div>
                   )}
-                </div>
+                </AnimatePresence>
               )}
-            </section>
+            </motion.section>
 
-            {/* Archived Notebooks */}
+            {/* Archived Projects */}
             {hasArchived && (
-              <section>
-                <div className="mb-6 flex items-center justify-between">
-                  <div>
-                    <h2 className="text-2xl font-bold">Archived</h2>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Completed or inactive projects
-                    </p>
-                  </div>
+              <motion.section
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.5, delay: 0.5 }}
+              >
+                <div className="mb-6">
+                  <h2 className="text-xl font-bold flex items-center gap-2">
+                    <Archive className="h-5 w-5 text-primary" />
+                    Archived Projects
+                  </h2>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {filteredArchived?.length ?? 0} {filteredArchived?.length === 1 ? 'project' : 'projects'} archived
+                  </p>
                 </div>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {filteredArchived && filteredArchived.length > 0 ? (
-                    filteredArchived.map((notebook) => (
-                      <NotebookCard key={notebook.id} notebook={notebook} archived />
-                    ))
-                  ) : (
-                    <div className="col-span-full text-center py-8 text-muted-foreground">
-                      No archived notebooks match your search
-                    </div>
-                  )}
-                </div>
-              </section>
+                <AnimatePresence>
+                  <div className={viewMode === 'grid' 
+                    ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5"
+                    : "space-y-3"
+                  }>
+                    {filteredArchived && filteredArchived.length > 0 ? (
+                      filteredArchived.map((notebook, index) => (
+                        viewMode === 'grid' ? (
+                          <NotebookCard key={notebook.id} notebook={notebook} archived index={index} />
+                        ) : (
+                          <NotebookListItem key={notebook.id} notebook={notebook} archived index={index} />
+                        )
+                      ))
+                    ) : (
+                      <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="col-span-full py-8 text-center text-sm text-muted-foreground border-2 border-dashed border-primary/30 rounded-xl bg-card/30"
+                      >
+                        No archived projects match your search
+                      </motion.div>
+                    )}
+                  </div>
+                </AnimatePresence>
+              </motion.section>
             )}
           </div>
         </div>
