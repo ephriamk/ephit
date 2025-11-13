@@ -360,14 +360,15 @@ export function useGeneratePodcast() {
       }, 2000)
       
       toast({
-        title: 'Podcast generation started',
-        description: `Episode "${response.episode_name}" is being created.`,
+        title: '🎙️ Podcast generation started',
+        description: `Episode "${response.episode_name}" is now being created. This may take 5-10 minutes. You'll see a spinner while it's processing.`,
+        duration: 8000,
       })
     },
-    onError: () => {
+    onError: (error) => {
       toast({
         title: 'Failed to start podcast generation',
-        description: 'Please try again in a moment.',
+        description: error instanceof Error ? error.message : 'Please try again in a moment.',
         variant: 'destructive',
       })
     },

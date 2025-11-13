@@ -153,9 +153,11 @@ export const useAuthStore = create<AuthState>()(
       refreshSession: async () => {
         const token = get().accessToken
         if (!token) {
+          set({ isAuthenticated: false, isLoading: false })
           return
         }
 
+        set({ isLoading: true })
         try {
           const apiUrl = await getApiUrl()
           const response = await fetch(`${apiUrl}/api/auth/me`, {
@@ -166,6 +168,7 @@ export const useAuthStore = create<AuthState>()(
           })
 
           if (!response.ok) {
+            // Token is invalid or expired - clear session
             get().clearSession()
             return
           }
@@ -174,10 +177,12 @@ export const useAuthStore = create<AuthState>()(
           set({
             user,
             isAuthenticated: true,
+            isLoading: false,
             error: null,
           })
         } catch (error) {
           console.error('Failed to refresh session:', error)
+          // Network error or other issue - clear session
           get().clearSession()
         }
       },
@@ -189,12 +194,26 @@ export const useAuthStore = create<AuthState>()(
     {
       name: 'auth-storage',
       partialize: (state) => ({
+        // Only persist token and user - NOT isAuthenticated
+        // isAuthenticated must be validated via refreshSession
         accessToken: state.accessToken,
         user: state.user,
-        isAuthenticated: state.isAuthenticated,
       }),
       onRehydrateStorage: () => (state) => {
+        // Set hasHydrated first
         state?.setHasHydrated(true)
+        
+        // If we have a token, validate it immediately
+        // But set isAuthenticated to false until validation completes
+        if (state?.accessToken) {
+          state.isAuthenticated = false // Don't trust persisted value
+          state.isLoading = true
+          // Validate token asynchronously
+          void state.refreshSession()
+        } else {
+          // No token means not authenticated
+          state.isAuthenticated = false
+        }
       },
     },
   ),

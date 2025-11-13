@@ -480,11 +480,9 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
 
       await generatePodcast.mutateAsync(payload)
 
-      // Delay closing dialog slightly to ensure refetch completes
-      setTimeout(() => {
-        onOpenChange(false)
-        resetState()
-      }, 500)
+      // Close dialog immediately - the toast and UI updates will show progress
+      onOpenChange(false)
+      resetState()
     } catch (error) {
       console.error('Failed to generate podcast', error)
       toast({

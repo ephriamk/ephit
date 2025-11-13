@@ -1,15 +1,31 @@
 'use client'
 
-import { useMemo, useState, useEffect, useRef } from 'react'
+import React, { useMemo, useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { AppShell } from '@/components/layout/AppShell'
 import { Button } from '@/components/ui/button'
-import { Plus, RefreshCw, Search, FileText, Clock, TrendingUp, Archive, Grid3x3, List, Zap, Activity, Layers, ArrowRight, Sparkles } from 'lucide-react'
-import { useNotebooks } from '@/lib/hooks/use-notebooks'
+import { Plus, RefreshCw, Search, FileText, Clock, TrendingUp, Archive, Grid3x3, List, Zap, Activity, Layers, ArrowRight, Sparkles, MoreVertical, Trash2 } from 'lucide-react'
+import { useNotebooks, useDeleteNotebook } from '@/lib/hooks/use-notebooks'
 import { CreateNotebookDialog, NOTEBOOK_CREATED_EVENT } from '@/components/notebooks/CreateNotebookDialog'
 import { Input } from '@/components/ui/input'
 import { formatDistanceToNow } from 'date-fns'
 import { Badge } from '@/components/ui/badge'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { OnboardingDialog } from '@/components/onboarding/OnboardingDialog'
 import { useAuthStore } from '@/lib/stores/auth-store'
 import { completeOnboarding } from '@/lib/api/onboarding'
@@ -19,7 +35,9 @@ import { motion, AnimatePresence } from 'framer-motion'
 type ViewMode = 'grid' | 'list'
 
 // Completely new card design - Dashboard widget style
-function NotebookCard({ notebook, archived = false, index }: { notebook: NotebookResponse, archived?: boolean, index: number }) {
+function NotebookCard({ notebook, archived = false, index, onDelete }: { notebook: NotebookResponse, archived?: boolean, index: number, onDelete: (id: string) => void }) {
+  const [showDeleteDialog, setShowDeleteDialog] = React.useState(false)
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -29,10 +47,10 @@ function NotebookCard({ notebook, archived = false, index }: { notebook: Noteboo
       whileHover={{ y: -4 }}
       className="group h-full"
     >
-      <Link href={`/notebooks/${notebook.id}`}>
-        <div className="relative h-full min-h-[240px] rounded-xl border-2 border-primary/20 bg-gradient-to-br from-card/90 to-card/60 backdrop-blur-xl overflow-hidden cursor-pointer transition-all duration-300 hover:border-primary/50 hover:shadow-xl hover:shadow-primary/20">
-          {/* Content */}
-          <div className="p-6 h-full flex flex-col">
+      <div className="relative h-full min-h-[240px] rounded-xl border-2 border-primary/20 bg-gradient-to-br from-card/90 to-card/60 backdrop-blur-xl overflow-hidden transition-all duration-300 hover:border-primary/50 hover:shadow-xl hover:shadow-primary/20">
+        {/* Content */}
+        <Link href={`/notebooks/${notebook.id}`} className="block p-6 h-full">
+          <div className="h-full flex flex-col">
             {/* Header */}
             <div className="flex items-start justify-between mb-4">
               <div className="flex-1 min-w-0">
@@ -80,14 +98,65 @@ function NotebookCard({ notebook, archived = false, index }: { notebook: Noteboo
               </motion.div>
             </div>
           </div>
+        </Link>
+        
+        {/* Actions Menu - positioned absolutely */}
+        <div className="absolute top-3 right-3 z-10">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 rounded-lg bg-background/80 backdrop-blur-sm hover:bg-background opacity-0 group-hover:opacity-100 transition-opacity"
+                onClick={(e) => e.preventDefault()}
+              >
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem
+                className="text-destructive focus:text-destructive"
+                onClick={(e) => {
+                  e.preventDefault()
+                  setShowDeleteDialog(true)
+                }}
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete Project
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
-      </Link>
+      </div>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Project?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{notebook.name}"? This action cannot be undone and will remove all associated sources and data.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => onDelete(notebook.id)}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </motion.div>
   )
 }
 
 // New list item - Compact and clean
-function NotebookListItem({ notebook, archived = false, index }: { notebook: NotebookResponse, archived?: boolean, index: number }) {
+function NotebookListItem({ notebook, archived = false, index, onDelete }: { notebook: NotebookResponse, archived?: boolean, index: number, onDelete: (id: string) => void }) {
+  const [showDeleteDialog, setShowDeleteDialog] = React.useState(false)
+
   return (
     <motion.div
       initial={{ opacity: 0, x: -20 }}
@@ -96,8 +165,9 @@ function NotebookListItem({ notebook, archived = false, index }: { notebook: Not
       transition={{ duration: 0.3, delay: index * 0.03 }}
       className="group"
     >
-      <Link href={`/notebooks/${notebook.id}`}>
-        <div className="relative p-4 rounded-xl border-2 border-primary/20 bg-gradient-to-r from-card/90 to-card/60 backdrop-blur-xl overflow-hidden cursor-pointer transition-all duration-300 hover:border-primary/50 hover:shadow-lg">
+      <div className="relative">
+        <Link href={`/notebooks/${notebook.id}`}>
+          <div className="relative p-4 rounded-xl border-2 border-primary/20 bg-gradient-to-r from-card/90 to-card/60 backdrop-blur-xl overflow-hidden cursor-pointer transition-all duration-300 hover:border-primary/50 hover:shadow-lg">
           <div className="flex items-center gap-4">
             {/* Icon */}
             <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-primary/30 to-primary/10 flex items-center justify-center border-2 border-primary/30 shrink-0 group-hover:border-primary/60 transition-colors">
@@ -148,7 +218,57 @@ function NotebookListItem({ notebook, archived = false, index }: { notebook: Not
           </div>
         </div>
       </Link>
-    </motion.div>
+      
+      {/* Actions Menu - positioned absolutely */}
+      <div className="absolute top-3 right-3 z-10">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 rounded-lg bg-background/80 backdrop-blur-sm hover:bg-background opacity-0 group-hover:opacity-100 transition-opacity"
+              onClick={(e) => e.preventDefault()}
+            >
+              <MoreVertical className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem
+              className="text-destructive focus:text-destructive"
+              onClick={(e) => {
+                e.preventDefault()
+                setShowDeleteDialog(true)
+              }}
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Delete Project
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+    </div>
+
+    {/* Delete Confirmation Dialog */}
+    <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Delete Project?</AlertDialogTitle>
+          <AlertDialogDescription>
+            Are you sure you want to delete "{notebook.name}"? This action cannot be undone and will remove all associated sources and data.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={() => onDelete(notebook.id)}
+            className="bg-destructive hover:bg-destructive/90"
+          >
+            Delete
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  </motion.div>
   )
 }
 
@@ -158,6 +278,7 @@ export default function NotebooksPage() {
   const [viewMode, setViewMode] = useState<ViewMode>('grid')
   const { data: notebooks, isLoading, refetch } = useNotebooks(false)
   const { data: archivedNotebooks } = useNotebooks(true)
+  const deleteNotebook = useDeleteNotebook()
   const mainContentRef = useRef<HTMLDivElement>(null)
   const { user, setSession, accessToken } = useAuthStore()
   const [showOnboarding, setShowOnboarding] = useState(false)
@@ -192,6 +313,10 @@ export default function NotebooksPage() {
 
   useEffect(() => {
     const handleNotebookCreated = () => {
+      // Immediately refetch notebooks to show the new one
+      refetch()
+      
+      // Then scroll to content after a short delay
       setTimeout(() => {
         if (mainContentRef.current) {
           mainContentRef.current.scrollIntoView({ 
@@ -207,7 +332,7 @@ export default function NotebooksPage() {
     return () => {
       window.removeEventListener(NOTEBOOK_CREATED_EVENT, handleNotebookCreated)
     }
-  }, [])
+  }, [refetch])
 
   const filteredActive = useMemo(() => {
     if (!notebooks) return undefined
@@ -231,6 +356,10 @@ export default function NotebooksPage() {
   const isSearching = normalizedQuery.length > 0
   const totalNotebooks = (notebooks?.length ?? 0) + (archivedNotebooks?.length ?? 0)
   const totalSources = notebooks?.reduce((sum, nb) => sum + (nb.source_count || 0), 0) ?? 0
+
+  const handleDelete = (id: string) => {
+    deleteNotebook.mutate(id)
+  }
 
   return (
     <AppShell>
@@ -452,9 +581,9 @@ export default function NotebooksPage() {
                     >
                       {filteredActive.map((notebook, index) => (
                         viewMode === 'grid' ? (
-                          <NotebookCard key={notebook.id} notebook={notebook} index={index} />
+                          <NotebookCard key={notebook.id} notebook={notebook} index={index} onDelete={handleDelete} />
                         ) : (
-                          <NotebookListItem key={notebook.id} notebook={notebook} index={index} />
+                          <NotebookListItem key={notebook.id} notebook={notebook} index={index} onDelete={handleDelete} />
                         )
                       ))}
                     </motion.div>
@@ -466,7 +595,14 @@ export default function NotebooksPage() {
                       exit={{ opacity: 0, scale: 0.95 }}
                       className="py-16 text-center border-2 border-dashed border-primary/30 rounded-xl bg-gradient-to-br from-card/50 to-card/30 backdrop-blur-xl"
                     >
-                      <div className="text-5xl mb-4">📊</div>
+                      <motion.div
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        transition={{ type: 'spring', duration: 0.6, delay: 0.2 }}
+                        className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/10 border-2 border-primary/30 mb-4"
+                      >
+                        <Sparkles className="h-8 w-8 text-primary" />
+                      </motion.div>
                       <h3 className="text-lg font-semibold mb-2">
                         {isSearching ? 'No projects match your search' : 'No active projects'}
                       </h3>
@@ -512,9 +648,9 @@ export default function NotebooksPage() {
                     {filteredArchived && filteredArchived.length > 0 ? (
                       filteredArchived.map((notebook, index) => (
                         viewMode === 'grid' ? (
-                          <NotebookCard key={notebook.id} notebook={notebook} archived index={index} />
+                          <NotebookCard key={notebook.id} notebook={notebook} archived index={index} onDelete={handleDelete} />
                         ) : (
-                          <NotebookListItem key={notebook.id} notebook={notebook} archived index={index} />
+                          <NotebookListItem key={notebook.id} notebook={notebook} archived index={index} onDelete={handleDelete} />
                         )
                       ))
                     ) : (

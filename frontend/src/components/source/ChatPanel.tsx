@@ -100,7 +100,7 @@ export function ChatPanel({
   }, [input])
 
   const handleSend = () => {
-    if (input.trim() && !isStreaming) {
+    if (input.trim()) {
       onSendMessage(input.trim(), modelOverride)
       setInput('')
       if (textareaRef.current) {
@@ -333,8 +333,7 @@ export function ChatPanel({
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder={`Ask a question... (${keyHint} to send)`}
-                disabled={isStreaming}
+                placeholder={isStreaming ? 'Generating... You can send another message or type to interrupt' : `Ask a question... (${keyHint} to send)`}
                 className={cn(
                   "min-h-[44px] max-h-[120px] resize-none py-3 px-4",
                   "bg-card/80 backdrop-blur-xl border-2 border-primary/20",
@@ -346,13 +345,13 @@ export function ChatPanel({
               />
             </div>
             <motion.div
-              whileHover={{ scale: input.trim() ? 1.05 : 1 }}
+              whileHover={{ scale: input.trim() || isStreaming ? 1.05 : 1 }}
               whileTap={{ scale: 0.95 }}
               transition={{ type: "spring", stiffness: 400, damping: 25 }}
             >
               <Button
                 onClick={handleSend}
-                disabled={!input.trim() || isStreaming}
+                disabled={!input.trim() && !isStreaming}
                 size="icon"
                 className={cn(
                   "h-[44px] w-[44px] flex-shrink-0 rounded-xl",

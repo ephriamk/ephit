@@ -20,6 +20,8 @@ class TokenData(BaseModel):
 pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
 
 _SECRET_KEY: Optional[str] = None
+# Server instance ID - changes on each restart to invalidate all tokens
+_SERVER_INSTANCE_ID: str = secrets.token_urlsafe(16)
 
 
 def get_secret_key() -> str:
@@ -54,17 +56,33 @@ def get_password_hash(password: str) -> str:
     return pwd_context.hash(password)
 
 
+def get_server_instance_id() -> str:
+    """Get the current server instance ID. Changes on each restart."""
+    return _SERVER_INSTANCE_ID
+
+
 def create_access_token(data: Dict[str, Any], expires_delta: Optional[timedelta] = None) -> str:
+    """
+    Create a JWT access token with server instance ID.
+    Tokens become invalid when the server restarts (instance ID changes).
+    """
     to_encode = data.copy()
     expire = datetime.now(timezone.utc) + (
         expires_delta if expires_delta else timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     )
-    to_encode.update({"exp": expire})
+    to_encode.update({
+        "exp": expire,
+        "sid": _SERVER_INSTANCE_ID,  # Server instance ID - invalidates tokens on restart
+    })
     encoded_jwt = jwt.encode(to_encode, get_secret_key(), algorithm=ALGORITHM)
     return encoded_jwt
 
 
 async def get_current_user(token: str = Depends(oauth2_scheme)) -> User:
+    """
+    Validate JWT token and return current user.
+    Tokens are invalidated on server restart via server instance ID check.
+    """
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -72,6 +90,21 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> User:
     )
     try:
         payload = jwt.decode(token, get_secret_key(), algorithms=[ALGORITHM])
+        
+        # CRITICAL SECURITY: Check server instance ID
+        # If server restarted, instance ID changed and token is invalid
+        token_instance_id = payload.get("sid")
+        if token_instance_id is None:
+            # Old tokens without SID are invalid (backward compatibility - reject old tokens)
+            logger.warning("Token rejected: missing server instance ID (old token format)")
+            raise credentials_exception
+        if token_instance_id != _SERVER_INSTANCE_ID:
+            logger.warning(
+                f"Token rejected: server instance ID mismatch. "
+                f"Token SID: {token_instance_id[:8]}..., Current SID: {_SERVER_INSTANCE_ID[:8]}..."
+            )
+            raise credentials_exception
+        
         subject: Optional[str] = payload.get("sub")
         if subject is None:
             raise credentials_exception

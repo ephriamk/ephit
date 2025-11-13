@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useCallback, useRef, useEffect } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { sourceChatApi } from '@/lib/api/source-chat'
 import {
@@ -11,14 +12,16 @@ import {
   CreateSourceChatSessionRequest,
   UpdateSourceChatSessionRequest
 } from '@/lib/types/api'
+import { parseApiKeyError, formatApiKeyError } from '@/lib/utils/api-errors'
 
 export function useSourceChat(sourceId: string) {
   const queryClient = useQueryClient()
+  const router = useRouter()
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null)
   const [messages, setMessages] = useState<SourceChatMessage[]>([])
   const [isStreaming, setIsStreaming] = useState(false)
   const [contextIndicators, setContextIndicators] = useState<SourceChatContextIndicator | null>(null)
-  const abortControllerRef = useRef<AbortController | null>(null)
+  const [currentReader, setCurrentReader] = useState<ReadableStreamDefaultReader<Uint8Array> | null>(null)
 
   // Fetch sessions
   const { data: sessions = [], isLoading: loadingSessions, refetch: refetchSessions } = useQuery<SourceChatSession[]>({
@@ -95,8 +98,24 @@ export function useSourceChat(sourceId: string) {
     }
   })
 
+  // Cancel streaming
+  const stopStream = useCallback(() => {
+    if (currentReader) {
+      currentReader.cancel()
+      setCurrentReader(null)
+      setIsStreaming(false)
+      toast.info('Message generation stopped')
+    }
+  }, [currentReader])
+
   // Send message with streaming
   const sendMessage = useCallback(async (message: string, modelOverride?: string) => {
+    // Cancel any existing stream before starting a new one
+    if (currentReader) {
+      await currentReader.cancel()
+      setCurrentReader(null)
+    }
+
     let sessionId = currentSessionId
 
     // Auto-create session if none exists
@@ -135,6 +154,7 @@ export function useSourceChat(sourceId: string) {
       }
 
       const reader = response.getReader()
+      setCurrentReader(reader)
       const decoder = new TextDecoder()
       let aiMessage: SourceChatMessage | null = null
 
@@ -172,6 +192,22 @@ export function useSourceChat(sourceId: string) {
               } else if (data.type === 'context_indicators') {
                 setContextIndicators(data.data)
               } else if (data.type === 'error') {
+                // Parse error to check if it's an API key issue
+                const errorInfo = parseApiKeyError({ message: data.message })
+                if (errorInfo.isApiKeyError) {
+                  // Show detailed API key error
+                  toast.error(formatApiKeyError(errorInfo), {
+                    description: errorInfo.actionText 
+                      ? `Click to ${errorInfo.actionText.toLowerCase()}`
+                      : undefined,
+                    action: errorInfo.actionUrl ? {
+                      label: errorInfo.actionText || 'Go to Settings',
+                      onClick: () => router.push(errorInfo.actionUrl!)
+                    } : undefined,
+                    duration: 8000,
+                  })
+                  throw new Error(data.message || 'API key error')
+                }
                 throw new Error(data.message || 'Stream error')
               }
             } catch (e) {
@@ -180,25 +216,45 @@ export function useSourceChat(sourceId: string) {
           }
         }
       }
-    } catch (error) {
-      console.error('Error sending message:', error)
-      toast.error('Failed to send message')
-      // Remove optimistic messages on error
-      setMessages(prev => prev.filter(msg => !msg.id.startsWith('temp-')))
+    } catch (error: any) {
+      // Don't show error toast if it was a cancellation
+      if (error?.name !== 'AbortError') {
+        console.error('Error sending message:', error)
+        
+        // Parse error to check if it's an API key issue
+        const errorInfo = parseApiKeyError(error)
+        
+        if (errorInfo.isApiKeyError) {
+          // Show detailed API key error with action button
+          toast.error(formatApiKeyError(errorInfo), {
+            description: errorInfo.actionText 
+              ? `Click to ${errorInfo.actionText.toLowerCase()}`
+              : undefined,
+            action: errorInfo.actionUrl ? {
+              label: errorInfo.actionText || 'Go to Settings',
+              onClick: () => router.push(errorInfo.actionUrl!)
+            } : undefined,
+            duration: 8000,
+          })
+        } else {
+          // Generic error
+          toast.error('Failed to send message', {
+            description: error?.message || 'An unexpected error occurred',
+            duration: 5000,
+          })
+        }
+      }
+      // Remove optimistic messages on error (but not on cancellation)
+      if (error?.name !== 'AbortError') {
+        setMessages(prev => prev.filter(msg => !msg.id.startsWith('temp-')))
+      }
     } finally {
       setIsStreaming(false)
+      setCurrentReader(null)
       // Refetch session to get persisted messages
       refetchCurrentSession()
     }
-  }, [sourceId, currentSessionId, refetchCurrentSession, queryClient])
-
-  // Cancel streaming
-  const cancelStreaming = useCallback(() => {
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort()
-      setIsStreaming(false)
-    }
-  }, [])
+  }, [sourceId, currentSessionId, currentReader, refetchCurrentSession, queryClient, router])
 
   // Switch session
   const switchSession = useCallback((sessionId: string) => {
@@ -237,7 +293,7 @@ export function useSourceChat(sourceId: string) {
     deleteSession,
     switchSession,
     sendMessage,
-    cancelStreaming,
+    stopStream,
     refetchSessions
   }
 }

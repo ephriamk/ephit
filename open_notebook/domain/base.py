@@ -113,6 +113,7 @@ class ObjectModel(BaseModel):
 
     async def save(self) -> None:
         from open_notebook.domain.models import model_manager
+        from open_notebook.utils.provider_env import user_provider_context
 
         try:
             self.model_validate(self.model_dump(), strict=True)
@@ -122,16 +123,30 @@ class ObjectModel(BaseModel):
             if self.needs_embedding():
                 embedding_content = self.get_embedding_content()
                 if embedding_content:
-                    EMBEDDING_MODEL = await model_manager.get_embedding_model()
-                    if not EMBEDDING_MODEL:
+                    try:
+                        # Get user ID from owner field if it exists
+                        user_id = getattr(self, 'owner', None)
+                        if user_id:
+                            user_id = str(user_id)
+                        
+                        # Use user's API keys for embedding generation
+                        async with user_provider_context(user_id):
+                            EMBEDDING_MODEL = await model_manager.get_embedding_model()
+                            if not EMBEDDING_MODEL:
+                                logger.warning(
+                                    "No embedding model found. Content will not be searchable."
+                                )
+                            data["embedding"] = (
+                                (await EMBEDDING_MODEL.aembed([embedding_content]))[0]
+                                if EMBEDDING_MODEL
+                                else []
+                            )
+                    except Exception as e:
+                        # If embedding generation fails (e.g., no API key), continue without embedding
                         logger.warning(
-                            "No embedding model found. Content will not be searchable."
+                            f"Failed to generate embedding: {str(e)}. Content will not be searchable."
                         )
-                    data["embedding"] = (
-                        (await EMBEDDING_MODEL.aembed([embedding_content]))[0]
-                        if EMBEDDING_MODEL
-                        else []
-                    )
+                        data["embedding"] = []
 
             repo_result: Union[List[Dict[str, Any]], Dict[str, Any]]
             if self.id is None:

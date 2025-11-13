@@ -60,6 +60,7 @@ export function LoginForm() {
   const [localError, setLocalError] = useState<string | null>(null)
   const [configInfo, setConfigInfo] = useState<{ apiUrl: string; version: string; buildTime: string } | null>(null)
   const [isRegistering, setIsRegistering] = useState(false)
+  const [isLoggingIn, setIsLoggingIn] = useState(false)
 
   useEffect(() => {
     getConfig()
@@ -84,7 +85,11 @@ export function LoginForm() {
 
   useEffect(() => {
     if (isAuthenticated) {
-      router.replace('/notebooks')
+      // Small delay to show success state before redirect
+      const timer = setTimeout(() => {
+        router.replace('/notebooks')
+      }, 300)
+      return () => clearTimeout(timer)
     }
   }, [isAuthenticated, router])
 
@@ -134,9 +139,18 @@ export function LoginForm() {
         console.error('Registration error:', err)
       }
     } else {
-      const success = await login(email.trim(), password)
-      if (!success) {
-        return
+      setIsLoggingIn(true)
+      try {
+        const success = await login(email.trim(), password)
+        if (!success) {
+          setIsLoggingIn(false)
+          return
+        }
+        // Login successful - redirect will happen via useEffect
+        // Keep loading state until redirect
+      } catch (err) {
+        setIsLoggingIn(false)
+        console.error('Login error:', err)
       }
     }
   }
@@ -151,9 +165,21 @@ export function LoginForm() {
 
   const activeError = localError || error
 
+  const isProcessing = isLoggingIn || isRegistering
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-lg">
+      <Card className={`w-full max-w-lg relative transition-opacity ${isProcessing ? 'opacity-90' : 'opacity-100'}`}>
+        {isProcessing && (
+          <div className="absolute inset-0 bg-background/50 backdrop-blur-sm rounded-lg z-10 flex items-center justify-center">
+            <div className="flex flex-col items-center gap-3">
+              <LoadingSpinner />
+              <p className="text-sm text-muted-foreground">
+                {mode === 'login' ? 'Signing you in...' : 'Creating your account...'}
+              </p>
+            </div>
+          </div>
+        )}
         <CardHeader className="text-center space-y-2">
           <CardTitle className="text-2xl">Datara</CardTitle>
           <CardDescription>
@@ -174,6 +200,7 @@ export function LoginForm() {
                 onChange={(event) => setEmail(event.target.value)}
                 autoComplete="email"
                 required
+                disabled={isLoggingIn || isRegistering}
               />
             </div>
 
@@ -185,6 +212,7 @@ export function LoginForm() {
                   placeholder="How should we address you?"
                   value={displayName}
                   onChange={(event) => setDisplayName(event.target.value)}
+                  disabled={isLoggingIn || isRegistering}
                 />
               </div>
             )}
@@ -199,6 +227,7 @@ export function LoginForm() {
                 onChange={(event) => setPassword(event.target.value)}
                 autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
                 required
+                disabled={isLoggingIn || isRegistering}
               />
             </div>
 
@@ -214,6 +243,7 @@ export function LoginForm() {
                     onChange={(event) => setConfirmPassword(event.target.value)}
                     autoComplete="new-password"
                     required
+                    disabled={isLoggingIn || isRegistering}
                   />
                 </div>
 
@@ -254,18 +284,35 @@ export function LoginForm() {
             <Button
               type="submit"
               className="w-full flex items-center justify-center gap-2"
-              disabled={isLoading || isRegistering}
+              disabled={isLoading || isRegistering || isLoggingIn}
             >
               {mode === 'login' ? (
                 <>
-                  {isLoading ? 'Signing in...' : 'Sign in'}
-                  <ArrowRight className="h-4 w-4" />
+                  {isLoggingIn || isLoading ? (
+                    <>
+                      <LoadingSpinner />
+                      Signing in...
+                    </>
+                  ) : (
+                    <>
+                      Sign in
+                      <ArrowRight className="h-4 w-4" />
+                    </>
+                  )}
                 </>
               ) : (
                 <>
-                  {isRegistering ? 'Creating account...' : 'Create account'}
-                  {!isRegistering && <ArrowRight className="h-4 w-4" />}
-                  {isRegistering && <LoadingSpinner />}
+                  {isRegistering ? (
+                    <>
+                      <LoadingSpinner />
+                      Creating account...
+                    </>
+                  ) : (
+                    <>
+                      Create account
+                      <ArrowRight className="h-4 w-4" />
+                    </>
+                  )}
                 </>
               )}
             </Button>
@@ -279,6 +326,7 @@ export function LoginForm() {
                   type="button"
                   onClick={handleToggleMode}
                   className="text-primary underline-offset-2 hover:underline"
+                  disabled={isLoggingIn || isRegistering}
                 >
                   Register now
                 </button>
@@ -290,6 +338,7 @@ export function LoginForm() {
                   type="button"
                   onClick={handleToggleMode}
                   className="text-primary underline-offset-2 hover:underline"
+                  disabled={isLoggingIn || isRegistering}
                 >
                   Sign in instead
                 </button>

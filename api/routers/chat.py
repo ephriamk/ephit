@@ -409,6 +409,67 @@ async def execute_chat(request: ExecuteChatRequest, current_user: User = Depends
         raise HTTPException(status_code=500, detail=f"Error executing chat: {error_detail}")
 
 
+def extract_error_message(error: Exception) -> str:
+    """
+    Extract a clean, user-friendly error message from various error formats.
+    Handles OpenAI API errors, generic exceptions, and Unicode errors.
+    """
+    error_str = str(error)
+    
+    # Handle Unicode errors
+    if isinstance(error, UnicodeEncodeError):
+        return "Unicode encoding error"
+    
+    # Try to parse OpenAI-style error messages
+    # Format: "Error code: 401 - {'error': {'message': '...', ...}}"
+    import re
+    
+    # Pattern 1: Extract message from OpenAI error dict string
+    # Matches: Error code: XXX - {'error': {'message': 'actual message', ...}}
+    # Handles both single and double quotes, and escaped quotes
+    openai_patterns = [
+        r"Error code:\s*\d+\s*-\s*\{'error':\s*\{'message':\s*'([^']*(?:\\'[^']*)*)'",  # Single quotes with escapes
+        r"Error code:\s*\d+\s*-\s*\{\"error\":\s*\{\"message\":\s*\"([^\"]*(?:\\\"[^\"]*)*)\"",  # Double quotes with escapes
+        r"Error code:\s*\d+\s*-\s*\{'error':\s*\{'message':\s*'([^']+)'",  # Simple single quotes
+        r"Error code:\s*\d+\s*-\s*\{\"error\":\s*\{\"message\":\s*\"([^\"]+)\"",  # Simple double quotes
+    ]
+    
+    for pattern in openai_patterns:
+        match = re.search(pattern, error_str)
+        if match:
+            # Unescape quotes
+            message = match.group(1).replace("\\'", "'").replace('\\"', '"')
+            return message
+    
+    # Pattern 2: Extract from JSON-like error dict (without Error code prefix)
+    json_patterns = [
+        r"\{'error':\s*\{'message':\s*'([^']*(?:\\'[^']*)*)'",
+        r"\{\"error\":\s*\{\"message\":\s*\"([^\"]*(?:\\\"[^\"]*)*)\"",
+        r"\{'error':\s*\{'message':\s*'([^']+)'",
+        r"\{\"error\":\s*\{\"message\":\s*\"([^\"]+)\"",
+    ]
+    
+    for pattern in json_patterns:
+        match = re.search(pattern, error_str)
+        if match:
+            message = match.group(1).replace("\\'", "'").replace('\\"', '"')
+            return message
+    
+    # Pattern 3: Check if error has an 'error' attribute (OpenAI SDK errors)
+    if hasattr(error, 'error') and isinstance(error.error, dict):
+        if 'message' in error.error:
+            return str(error.error['message'])
+    
+    # Pattern 4: Check if error has a 'message' attribute
+    if hasattr(error, 'message'):
+        return str(error.message)
+    
+    # Fallback: return cleaned string representation
+    # Remove common prefixes like "Error code: XXX -"
+    cleaned = re.sub(r'^Error code:\s*\d+\s*-\s*', '', error_str)
+    return cleaned if cleaned else "An unexpected error occurred"
+
+
 async def stream_chat_response(
     session_id: str,
     message: str,
@@ -510,9 +571,13 @@ async def stream_chat_response(
         logger.error(f"Error in chat streaming: {str(e)}")
         import traceback
         logger.debug(traceback.format_exc())
+        
+        # Extract clean error message from various error formats
+        error_message = extract_error_message(e)
+        
         error_event = {
             "type": "error",
-            "message": str(e) if not isinstance(e, UnicodeEncodeError) else "Unicode encoding error"
+            "message": error_message
         }
         yield f"data: {json.dumps(error_event)}\n\n"
 

@@ -20,13 +20,15 @@ export function useAuth() {
   } = useAuthStore()
 
   useEffect(() => {
+    // After hydration, if we have a token but aren't authenticated yet, validate it
+    // This is a safety net - refreshSession is also called in onRehydrateStorage
     if (!hasHydrated) {
       return
     }
-    if (accessToken && !user) {
+    if (accessToken && !isAuthenticated && !isLoading) {
       void refreshSession()
     }
-  }, [accessToken, user, refreshSession, hasHydrated])
+  }, [accessToken, isAuthenticated, isLoading, refreshSession, hasHydrated])
 
   const handleLogin = async (email: string, password: string) => {
     const success = await login(email, password)
@@ -60,6 +62,7 @@ export function useAuth() {
     accessToken,
     isAuthenticated,
     isLoading: isLoading || !hasHydrated,
+    hasHydrated,
     error,
     login: handleLogin,
     register: handleRegister,

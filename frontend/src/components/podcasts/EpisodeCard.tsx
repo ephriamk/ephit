@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { formatDistanceToNow } from 'date-fns'
-import { InfoIcon, Trash2 } from 'lucide-react'
+import { InfoIcon, Trash2, Loader2 } from 'lucide-react'
 
 import { resolvePodcastAssetUrl } from '@/lib/api/podcasts'
 import { EpisodeStatus, PodcastEpisode } from '@/lib/types/podcasts'
@@ -77,17 +77,17 @@ const STATUS_META: Record<
 }
 
 function StatusBadge({ status }: { status?: EpisodeStatus | null }) {
-  // Don't show badge for completed episodes
-  if (status === 'completed') {
-    return null
-  }
-
   const meta = STATUS_META[status ?? 'unknown'] ?? STATUS_META.unknown
+  
+  // Show animated loader for active processing statuses
+  const isProcessing = status === 'running' || status === 'processing' || status === 'pending' || status === 'submitted'
+  
   return (
     <Badge
       variant="outline"
-      className={cn('uppercase tracking-wide text-xs', meta.className)}
+      className={cn('uppercase tracking-wide text-xs flex items-center gap-1.5', meta.className)}
     >
+      {isProcessing && <Loader2 className="h-3 w-3 animate-spin" />}
       {meta.label}
     </Badge>
   )
@@ -224,6 +224,17 @@ export function EpisodeCard({ episode, onDelete, deleting }: EpisodeCardProps) {
               Profile: {episode.episode_profile?.name ?? 'Unknown'}
               {createdLabel ? ` • Created ${createdLabel}` : ''}
             </p>
+            {(episode.job_status === 'running' || episode.job_status === 'processing') && (
+              <p className="text-xs text-amber-600 font-medium flex items-center gap-1.5">
+                <Loader2 className="h-3 w-3 animate-spin" />
+                Generating audio clips and transcript... This may take 5-10 minutes.
+              </p>
+            )}
+            {episode.job_status === 'pending' && (
+              <p className="text-xs text-sky-600 font-medium">
+                Queued for processing... Will start shortly.
+              </p>
+            )}
           </div>
           <div className="flex items-center gap-2">
             <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>

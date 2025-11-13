@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { chatApi } from '@/lib/api/chat'
 import { QUERY_KEYS } from '@/lib/api/query-client'
@@ -13,6 +14,7 @@ import {
   NoteResponse
 } from '@/lib/types/api'
 import { ContextSelections } from '@/app/(dashboard)/notebooks/[id]/page'
+import { parseApiKeyError, formatApiKeyError } from '@/lib/utils/api-errors'
 
 interface UseNotebookChatParams {
   notebookId: string
@@ -23,11 +25,13 @@ interface UseNotebookChatParams {
 
 export function useNotebookChat({ notebookId, sources, notes, contextSelections }: UseNotebookChatParams) {
   const queryClient = useQueryClient()
+  const router = useRouter()
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null)
   const [messages, setMessages] = useState<NotebookChatMessage[]>([])
   const [isSending, setIsSending] = useState(false)
   const [tokenCount, setTokenCount] = useState<number>(0)
   const [charCount, setCharCount] = useState<number>(0)
+  const [currentReader, setCurrentReader] = useState<ReadableStreamDefaultReader<Uint8Array> | null>(null)
 
   // Fetch sessions for this notebook
   const {
@@ -164,8 +168,24 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
     return response.context
   }, [notebookId, sources, notes, contextSelections])
 
+  // Stop current stream
+  const stopStream = useCallback(() => {
+    if (currentReader) {
+      currentReader.cancel()
+      setCurrentReader(null)
+      setIsSending(false)
+      toast.info('Message generation stopped')
+    }
+  }, [currentReader])
+
   // Send message with streaming
   const sendMessage = useCallback(async (message: string, modelOverride?: string) => {
+    // Cancel any existing stream before starting a new one
+    if (currentReader) {
+      await currentReader.cancel()
+      setCurrentReader(null)
+    }
+
     let sessionId = currentSessionId
 
     // Auto-create session if none exists
@@ -210,6 +230,7 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
       })
 
       const reader = stream.getReader()
+      setCurrentReader(reader)
       const decoder = new TextDecoder()
       let aiMessage: NotebookChatMessage | null = null
 
@@ -257,6 +278,22 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
                   )
                 }
               } else if (data.type === 'error') {
+                // Parse error to check if it's an API key issue
+                const errorInfo = parseApiKeyError({ message: data.message })
+                if (errorInfo.isApiKeyError) {
+                  // Show detailed API key error
+                  toast.error(formatApiKeyError(errorInfo), {
+                    description: errorInfo.actionText 
+                      ? `Click to ${errorInfo.actionText.toLowerCase()}`
+                      : undefined,
+                    action: errorInfo.actionUrl ? {
+                      label: errorInfo.actionText || 'Go to Settings',
+                      onClick: () => router.push(errorInfo.actionUrl!)
+                    } : undefined,
+                    duration: 8000,
+                  })
+                  throw new Error(data.message || 'API key error')
+                }
                 throw new Error(data.message || 'Stream error')
               }
             } catch (e) {
@@ -268,21 +305,51 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
 
       // Refetch current session to get updated data
       await refetchCurrentSession()
-    } catch (error) {
-      console.error('Error sending message:', error)
-      toast.error('Failed to send message')
-      // Remove optimistic messages on error
-      setMessages(prev => prev.filter(msg => !msg.id.startsWith('temp-')))
+    } catch (error: any) {
+      // Don't show error toast if it was a cancellation
+      if (error?.name !== 'AbortError') {
+        console.error('Error sending message:', error)
+        
+        // Parse error to check if it's an API key issue
+        const errorInfo = parseApiKeyError(error)
+        
+        if (errorInfo.isApiKeyError) {
+          // Show detailed API key error with action button
+          toast.error(formatApiKeyError(errorInfo), {
+            description: errorInfo.actionText 
+              ? `Click to ${errorInfo.actionText.toLowerCase()}`
+              : undefined,
+            action: errorInfo.actionUrl ? {
+              label: errorInfo.actionText || 'Go to Settings',
+              onClick: () => router.push(errorInfo.actionUrl!)
+            } : undefined,
+            duration: 8000,
+          })
+        } else {
+          // Generic error
+          toast.error('Failed to send message', {
+            description: error?.message || 'An unexpected error occurred',
+            duration: 5000,
+          })
+        }
+      }
+      // Remove optimistic messages on error (but not on cancellation)
+      if (error?.name !== 'AbortError') {
+        setMessages(prev => prev.filter(msg => !msg.id.startsWith('temp-')))
+      }
     } finally {
       setIsSending(false)
+      setCurrentReader(null)
     }
   }, [
     notebookId,
     currentSessionId,
     currentSession,
+    currentReader,
     buildContext,
     refetchCurrentSession,
-    queryClient
+    queryClient,
+    router
   ])
 
   // Switch session
@@ -341,6 +408,7 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
     deleteSession,
     switchSession,
     sendMessage,
+    stopStream,
     refetchSessions
   }
 }

@@ -34,7 +34,7 @@ from api.routers import (
 )
 from api.routers import commands as commands_router
 from open_notebook.utils.crypto import MissingEncryptionKeyError, ensure_secret_key_configured
-from api.security import get_current_active_user
+from api.security import get_current_active_user, get_server_instance_id
 from open_notebook.database.async_migrate import AsyncMigrationManager
 
 # Import commands to register them in the API process
@@ -77,6 +77,10 @@ async def lifespan(app: FastAPI):
     except MissingEncryptionKeyError as exc:
         logger.error(str(exc))
         raise RuntimeError("FERNET_SECRET_KEY is required for secret storage") from exc
+
+    # Log server instance ID for security - tokens are invalidated on restart
+    server_instance_id = get_server_instance_id()
+    logger.info(f"🔒 Server instance ID: {server_instance_id[:8]}... (all tokens from previous instance are now invalid)")
 
     logger.success("API initialization completed successfully")
 

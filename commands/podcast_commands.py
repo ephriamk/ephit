@@ -87,6 +87,9 @@ async def generate_podcast_command(
         logger.info(f"Loaded episode profile: {episode_profile.name}")
         logger.info(f"Loaded speaker profile: {speaker_profile.name}")
 
+        # Import repo_query at module level to avoid scoping issues
+        from open_notebook.database.repository import repo_query, ensure_record_id
+
         # 3. Load all profiles and configure podcast-creator
         episode_profiles = await repo_query("SELECT * FROM episode_profile")
         speaker_profiles = await repo_query("SELECT * FROM speaker_profile")
@@ -109,26 +112,30 @@ async def generate_podcast_command(
         episode = None
         if input_data.user_id:
             try:
-                from open_notebook.database.repository import repo_query, ensure_record_id
                 user_record_id = ensure_record_id(input_data.user_id)
+                logger.info(f"Looking for episode: name='{input_data.episode_name}', owner={user_record_id}")
                 results = await repo_query(
                     "SELECT * FROM episode WHERE name = $name AND owner = $owner ORDER BY created DESC LIMIT 1",
                     {"name": input_data.episode_name, "owner": user_record_id}
                 )
                 if results:
                     episode = PodcastEpisode(**results[0])
-                    logger.info(f"Found existing episode: {episode.id}")
+                    logger.info(f"✅ Found existing episode: {episode.id} (name='{episode.name}')")
                     # Update episode with command reference if not already set
                     if input_data.execution_context and not episode.command:
                         episode.command = ensure_record_id(input_data.execution_context.command_id)
                         await episode.save()
                         logger.info(f"Updated episode {episode.id} with command reference")
+                else:
+                    logger.warning(f"❌ No episode found with name='{input_data.episode_name}' and owner={user_record_id}")
             except Exception as e:
-                logger.warning(f"Failed to find existing episode: {e}")
+                logger.error(f"❌ Failed to find existing episode: {e}")
+                import traceback
+                logger.error(traceback.format_exc())
 
         # Fallback: Create episode if not found (shouldn't happen, but for backward compatibility)
         if not episode:
-            logger.warning(f"Episode not found, creating new one (this shouldn't happen)")
+            logger.warning(f"⚠️ Episode not found, creating new one (this shouldn't happen)")
             episode = PodcastEpisode(
                 name=input_data.episode_name,
                 episode_profile=full_model_dump(episode_profile.model_dump()),
@@ -222,11 +229,13 @@ async def generate_podcast_command(
             }
             episode.outline = full_model_dump(result.get("outline")) if result.get("outline") else None
         
+        logger.info(f"💾 Saving episode {episode.id} with audio_file={episode.audio_file}")
         await episode.save()
+        logger.info(f"✅ Episode saved successfully")
 
         processing_time = time.time() - start_time
         logger.info(
-            f"Successfully generated podcast episode: {episode.id} in {processing_time:.2f}s"
+            f"🎉 Successfully generated podcast episode: {episode.id} in {processing_time:.2f}s (audio: {episode.audio_file})"
         )
 
         return PodcastGenerationOutput(

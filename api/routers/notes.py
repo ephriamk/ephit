@@ -67,17 +67,26 @@ async def create_note(
         # Auto-generate title if not provided and it's an AI note
         title = note_data.title
         if not title and note_data.note_type == "ai" and note_data.content:
-            from open_notebook.graphs.prompt import graph as prompt_graph
-            prompt = "Based on the Note below, please provide a Title for this content, with max 15 words"
-            # Use user's API keys for AI operations
-            async with user_provider_context(current_user.id):
-                result = await prompt_graph.ainvoke(
-                    {  # type: ignore[arg-type]
-                        "input_text": note_data.content,
-                        "prompt": prompt
-                    }
-                )
-            title = result.get("output", "Untitled Note")
+            try:
+                from open_notebook.graphs.prompt import graph as prompt_graph
+                prompt = "Based on the Note below, please provide a Title for this content, with max 15 words"
+                # Use user's API keys for AI operations
+                async with user_provider_context(current_user.id):
+                    result = await prompt_graph.ainvoke(
+                        {  # type: ignore[arg-type]
+                            "input_text": note_data.content,
+                            "prompt": prompt
+                        }
+                    )
+                title = result.get("output", "Untitled Note")
+            except Exception as e:
+                # If AI title generation fails (e.g., no API key), use a default title
+                logger.warning(f"Failed to auto-generate note title: {str(e)}. Using default title.")
+                title = "Untitled Note"
+        
+        # Fallback for notes without title
+        if not title:
+            title = "Untitled Note"
         
         # Validate note_type
         note_type: Optional[Literal["human", "ai"]] = None

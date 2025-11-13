@@ -13,7 +13,7 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode
 }) {
-  const { isAuthenticated, isLoading } = useAuth()
+  const { isAuthenticated, isLoading, hasHydrated } = useAuth()
   const router = useRouter()
   const [hasCheckedAuth, setHasCheckedAuth] = useState(false)
 
@@ -21,8 +21,8 @@ export default function DashboardLayout({
   // useVersionCheck()
 
   useEffect(() => {
-    // Mark that we've completed the initial auth check
-    if (!isLoading) {
+    // Wait for hydration AND loading to complete before checking auth
+    if (hasHydrated && !isLoading) {
       setHasCheckedAuth(true)
 
       // Redirect to login if not authenticated
@@ -33,10 +33,11 @@ export default function DashboardLayout({
         router.push('/login')
       }
     }
-  }, [isAuthenticated, isLoading, router])
+  }, [isAuthenticated, isLoading, hasHydrated, router])
 
   // Show loading spinner during initial auth check or while loading
-  if (isLoading || !hasCheckedAuth) {
+  // CRITICAL: Don't render children until auth is validated
+  if (!hasHydrated || isLoading || !hasCheckedAuth) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <LoadingSpinner />
