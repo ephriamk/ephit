@@ -30,7 +30,11 @@ export function useCreateNotebook() {
   return useMutation({
     mutationFn: (data: CreateNotebookRequest) => notebooksApi.create(data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.notebooks })
+      // Invalidate all notebook queries and immediately refetch active ones
+      queryClient.invalidateQueries({ 
+        queryKey: QUERY_KEYS.notebooks,
+        refetchType: 'active'  // Force immediate refetch of active queries
+      })
       toast({
         title: 'Success',
         description: 'Notebook created successfully',
@@ -54,8 +58,14 @@ export function useUpdateNotebook() {
     mutationFn: ({ id, data }: { id: string; data: UpdateNotebookRequest }) =>
       notebooksApi.update(id, data),
     onSuccess: (_, { id }) => {
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.notebooks })
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.notebook(id) })
+      queryClient.invalidateQueries({ 
+        queryKey: QUERY_KEYS.notebooks,
+        refetchType: 'active'  // Force immediate refetch of active queries
+      })
+      queryClient.invalidateQueries({ 
+        queryKey: QUERY_KEYS.notebook(id),
+        refetchType: 'active'
+      })
       toast({
         title: 'Success',
         description: 'Notebook updated successfully',
@@ -78,7 +88,10 @@ export function useDeleteNotebook() {
   return useMutation({
     mutationFn: (id: string) => notebooksApi.delete(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.notebooks })
+      queryClient.invalidateQueries({ 
+        queryKey: QUERY_KEYS.notebooks,
+        refetchType: 'active'  // Force immediate refetch of active queries
+      })
       toast({
         title: 'Success',
         description: 'Notebook deleted successfully',

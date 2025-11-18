@@ -62,11 +62,19 @@ export function CreateNotebookDialog({ open, onOpenChange }: CreateNotebookDialo
   const closeDialog = () => onOpenChange(false)
 
   const onSubmit = async (data: CreateNotebookFormData) => {
-    await createNotebook.mutateAsync(data)
-    closeDialog()
-    reset()
-    // Dispatch event to trigger scroll to top
-    window.dispatchEvent(new CustomEvent(NOTEBOOK_CREATED_EVENT))
+    try {
+      await createNotebook.mutateAsync(data)
+      // Small delay to ensure React Query processes cache invalidation
+      // This ensures the list updates before dialog closes
+      await new Promise(resolve => setTimeout(resolve, 100))
+      closeDialog()
+      reset()
+      // Dispatch event as backup to trigger scroll (can be removed if React Query handles it)
+      window.dispatchEvent(new CustomEvent(NOTEBOOK_CREATED_EVENT))
+    } catch (error) {
+      // Error is already handled in mutation's onError callback
+      // Don't close dialog on error so user can retry
+    }
   }
 
   useEffect(() => {
