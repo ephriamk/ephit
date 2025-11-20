@@ -135,7 +135,7 @@ function NotebookCard({ notebook, archived = false, index, onDelete }: { noteboo
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Project?</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete "{notebook.name}"? This action cannot be undone and will remove all associated sources and data.
+              Are you sure you want to delete &quot;{notebook.name}&quot;? This action cannot be undone and will remove all associated sources and data.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -254,7 +254,7 @@ function NotebookListItem({ notebook, archived = false, index, onDelete }: { not
         <AlertDialogHeader>
           <AlertDialogTitle>Delete Project?</AlertDialogTitle>
           <AlertDialogDescription>
-            Are you sure you want to delete "{notebook.name}"? This action cannot be undone and will remove all associated sources and data.
+            Are you sure you want to delete &quot;{notebook.name}&quot;? This action cannot be undone and will remove all associated sources and data.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

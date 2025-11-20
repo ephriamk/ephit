@@ -216,9 +216,9 @@ export function useSourceChat(sourceId: string) {
           }
         }
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Don't show error toast if it was a cancellation
-      if (error?.name !== 'AbortError') {
+      if (error && typeof error === 'object' && 'name' in error && error.name !== 'AbortError') {
         console.error('Error sending message:', error)
         
         // Parse error to check if it's an API key issue

@@ -24,16 +24,17 @@ interface ModelSelectorProps {
 export function ModelSelector({ value, onValueChange, modelType, provider, disabled }: ModelSelectorProps) {
   const { data: models, isLoading, error } = useOpenRouterModels(modelType)
 
-  // Only show selector for OpenRouter
-  if (provider !== 'openrouter') {
-    return null
-  }
-
   // Limit to first 200 models for performance
+  // Must be called before any conditional returns (React hooks rule)
   const displayModels = useMemo(() => {
     if (!models) return []
     return models.slice(0, 200)
   }, [models])
+
+  // Only show selector for OpenRouter
+  if (provider !== 'openrouter') {
+    return null
+  }
 
   const selectedModel = models?.find((model) => model.id === value)
 

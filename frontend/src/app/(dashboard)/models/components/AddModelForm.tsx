@@ -180,7 +180,7 @@ export function AddModelForm({ modelType, providers }: AddModelFormProps) {
             )}
             {watch('provider') === 'openrouter' && (
               <p className="text-xs text-muted-foreground">
-                Select a model from OpenRouter's catalog. Models are fetched in real-time.
+                Select a model from OpenRouter&apos;s catalog. Models are fetched in real-time.
               </p>
             )}
           </div>

@@ -88,7 +88,7 @@ function ConfigureProviderDialog({ provider }: { provider: string }) {
       // Refresh provider availability and secrets
       await refetchProviders()
       await refetchSecrets()
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: 'Error',
         description: error?.message || 'Failed to configure provider',

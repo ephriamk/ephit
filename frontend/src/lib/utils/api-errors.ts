@@ -13,8 +13,18 @@ export interface ApiKeyErrorInfo {
 /**
  * Parse error message to detect API key issues
  */
-export function parseApiKeyError(error: any): ApiKeyErrorInfo {
-  const errorMessage = error?.message || error?.toString() || ''
+export function parseApiKeyError(error: unknown): ApiKeyErrorInfo {
+  // Safely extract error message from unknown type
+  let errorMessage = ''
+  if (error && typeof error === 'object') {
+    if ('message' in error && typeof error.message === 'string') {
+      errorMessage = error.message
+    } else {
+      errorMessage = String(error)
+    }
+  } else if (error) {
+    errorMessage = String(error)
+  }
   const lowerMessage = errorMessage.toLowerCase()
 
   // Check for common API key error patterns
