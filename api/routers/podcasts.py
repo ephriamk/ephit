@@ -221,6 +221,8 @@ async def stream_podcast_episode_audio(episode_id: str):
     if not episode.audio_file:
         raise HTTPException(status_code=404, detail="Episode has no audio file")
 
+    # DEFAULT: Serve from Render's persistent disk (/mydata/podcasts/)
+    # S3 is optional - only used if episode.audio_file starts with "s3://"
     if episode.audio_file.startswith("s3://"):
         _, key = parse_s3_url(episode.audio_file)
         if not key:

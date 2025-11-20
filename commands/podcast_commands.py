@@ -188,7 +188,10 @@ async def generate_podcast_command(
         storage_url: Optional[str] = None
 
         if final_audio_path.exists():
+            # DEFAULT: Store on Render's persistent disk (/mydata/podcasts/)
+            # S3 is optional - only used if explicitly configured via environment variables
             if is_s3_configured():
+                # Optional S3 path: Upload to S3, then delete local copy to save disk space
                 key = build_episode_asset_key(
                     input_data.user_id,
                     str(episode.id),
@@ -208,11 +211,15 @@ async def generate_podcast_command(
                     except OSError as unlink_error:
                         logger.warning(f"Failed to remove local audio file {final_audio_path}: {unlink_error}")
                 except S3StorageError as exc:
-                    logger.error(f"S3 upload failed, falling back to local storage: {exc}")
+                    # Fallback to persistent disk if S3 upload fails
+                    logger.error(f"S3 upload failed, falling back to persistent disk storage: {exc}")
                     episode.audio_file = str(final_audio_path.resolve())
+                    logger.info(f"Saved audio file to persistent disk: {episode.audio_file}")
             else:
+                # DEFAULT PATH: Save to Render's persistent disk (/mydata/podcasts/)
+                # This is the default behavior - no S3 configuration needed
                 episode.audio_file = str(final_audio_path.resolve())
-                logger.info(f"Saved audio file path: {episode.audio_file}")
+                logger.info(f"Saved audio file to persistent disk (default): {episode.audio_file}")
         else:
             logger.warning(f"Audio file not found at expected location: {final_audio_path}")
             # Try to get it from result if available, or construct path anyway

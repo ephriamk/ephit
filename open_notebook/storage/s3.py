@@ -84,7 +84,17 @@ def _client() -> BaseClient:
 
 
 def is_s3_configured() -> bool:
-    """Return True when the required S3 environment variables are present."""
+    """
+    Check if S3 storage is configured via environment variables.
+    
+    Returns False by default (uses Render's persistent disk).
+    Only returns True if ALL required S3 environment variables are present:
+    - S3_BUCKET_NAME
+    - AWS_ACCESS_KEY_ID
+    - AWS_SECRET_ACCESS_KEY
+    
+    DEFAULT: False (uses persistent disk at /mydata/)
+    """
     return bool(
         _get_bucket_name()
         and os.getenv("AWS_ACCESS_KEY_ID")
