@@ -14,7 +14,6 @@ import {
   Menu,
   Plus,
   LogOut,
-  Sparkles,
   Shuffle,
   Wrench,
   Shield

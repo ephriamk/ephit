@@ -20,7 +20,7 @@ interface AddModelFormProps {
 export function AddModelForm({ modelType, providers }: AddModelFormProps) {
   const [open, setOpen] = useState(false)
   const createModel = useCreateModel()
-  const { register, handleSubmit, formState: { errors }, reset, control, watch, setValue, clearErrors } = useForm<CreateModelRequest>({
+  const { handleSubmit, formState: { errors }, reset, control, watch, setValue, clearErrors } = useForm<CreateModelRequest>({
     defaultValues: {
       type: modelType,
       provider: '',

@@ -89,9 +89,14 @@ function ConfigureProviderDialog({ provider }: { provider: string }) {
       await refetchProviders()
       await refetchSecrets()
     } catch (error: unknown) {
+      // Safely extract error message
+      const errorMessage = error && typeof error === 'object' && 'message' in error && typeof error.message === 'string'
+        ? error.message
+        : 'Failed to configure provider'
+      
       toast({
         title: 'Error',
-        description: error?.message || 'Failed to configure provider',
+        description: errorMessage,
         variant: 'destructive',
       })
     }
@@ -234,7 +239,7 @@ export function ProviderStatus({ providers }: ProviderStatusProps) {
             layout
           >
             <AnimatePresence>
-              {visibleProviders.map((provider, index) => {
+              {visibleProviders.map((provider) => {
                 const supportedTypes = providers.supported_types[provider.name] ?? []
 
                 return (

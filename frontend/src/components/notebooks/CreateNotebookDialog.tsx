@@ -71,7 +71,7 @@ export function CreateNotebookDialog({ open, onOpenChange }: CreateNotebookDialo
       reset()
       // Dispatch event as backup to trigger scroll (can be removed if React Query handles it)
       window.dispatchEvent(new CustomEvent(NOTEBOOK_CREATED_EVENT))
-    } catch (error) {
+    } catch (_error) {
       // Error is already handled in mutation's onError callback
       // Don't close dialog on error so user can retry
     }
