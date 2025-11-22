@@ -78,9 +78,9 @@ async def lifespan(app: FastAPI):
         logger.error(str(exc))
         raise RuntimeError("FERNET_SECRET_KEY is required for secret storage") from exc
 
-    # Log server instance ID for security - tokens are invalidated on restart
+    # Log server instance ID for security - tokens persist across restarts
     server_instance_id = get_server_instance_id()
-    logger.info(f"🔒 Server instance ID: {server_instance_id[:8]}... (all tokens from previous instance are now invalid)")
+    logger.info(f"🔒 Server instance ID: {server_instance_id[:8]}... (tokens persist across restarts)")
 
     logger.success("API initialization completed successfully")
 
