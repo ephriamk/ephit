@@ -204,7 +204,6 @@ export function useSourceChat(sourceId: string) {
                       label: errorInfo.actionText || 'Go to Settings',
                       onClick: () => router.push(errorInfo.actionUrl!)
                     } : undefined,
-                    duration: 8000,
                   })
                   throw new Error(data.message || 'API key error')
                 }
@@ -234,18 +233,20 @@ export function useSourceChat(sourceId: string) {
               label: errorInfo.actionText || 'Go to Settings',
               onClick: () => router.push(errorInfo.actionUrl!)
             } : undefined,
-            duration: 8000,
           })
         } else {
           // Generic error
+          const errorMessage = error && typeof error === 'object' && 'message' in error && typeof error.message === 'string'
+            ? error.message
+            : 'An unexpected error occurred'
           toast.error('Failed to send message', {
-            description: error?.message || 'An unexpected error occurred',
-            duration: 5000,
+            description: errorMessage,
           })
         }
       }
       // Remove optimistic messages on error (but not on cancellation)
-      if (error?.name !== 'AbortError') {
+      const isAbortError = error && typeof error === 'object' && 'name' in error && error.name === 'AbortError'
+      if (!isAbortError) {
         setMessages(prev => prev.filter(msg => !msg.id.startsWith('temp-')))
       }
     } finally {

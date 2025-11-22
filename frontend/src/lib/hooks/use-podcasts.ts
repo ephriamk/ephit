@@ -362,7 +362,6 @@ export function useGeneratePodcast() {
       toast({
         title: '🎙️ Podcast generation started',
         description: `Episode "${response.episode_name}" is now being created. This may take 5-10 minutes. You'll see a spinner while it's processing.`,
-        duration: 8000,
       })
     },
     onError: (error) => {

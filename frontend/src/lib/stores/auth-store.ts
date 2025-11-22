@@ -200,12 +200,14 @@ export const useAuthStore = create<AuthState>()(
         user: state.user,
       }),
       onRehydrateStorage: () => (state) => {
+        if (!state) return
+        
         // Set hasHydrated first
-        state?.setHasHydrated(true)
+        state.setHasHydrated(true)
         
         // If we have a token, validate it immediately
         // But set isAuthenticated to false until validation completes
-        if (state?.accessToken) {
+        if (state.accessToken) {
           state.isAuthenticated = false // Don't trust persisted value
           state.isLoading = true
           // Validate token asynchronously

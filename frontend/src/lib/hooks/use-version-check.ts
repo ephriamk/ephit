@@ -24,7 +24,6 @@ export function useVersionCheck() {
             // Show persistent toast notification
             toast.info(`Version ${config.latestVersion} available`, {
               description: 'A new version of Open Notebook is available.',
-              duration: Infinity, // No auto-dismiss - user must manually dismiss
               closeButton: true, // Show close button for dismissing
               action: {
                 label: 'View on GitHub',
